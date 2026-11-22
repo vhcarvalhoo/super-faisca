@@ -164,7 +164,13 @@ function renderMapa() {
       cam.appendChild(wrap);
     });
   });
-  if (atual) setTimeout(() => atual.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" }), 200);
+  // rola só na vertical até a próxima missão (nunca para os lados)
+  const tela = $("#tela-mapa");
+  tela.scrollLeft = 0;
+  if (atual) setTimeout(() => {
+    const alvo = atual.getBoundingClientRect().top - tela.getBoundingClientRect().top + tela.scrollTop - tela.clientHeight / 2 + 60;
+    tela.scrollTo({ top: Math.max(0, alvo), left: 0, behavior: "smooth" });
+  }, 200);
 }
 
 /* ------------------------------------------------------------ lição */

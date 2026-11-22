@@ -1,6 +1,6 @@
 /* Service worker do Super Faísca: guarda o app no aparelho para funcionar sem internet.
    Ao publicar uma versão nova, aumente o número em VERSAO para o tablet baixar os arquivos novos. */
-const VERSAO = "super-faisca-v1";
+const VERSAO = "super-faisca-v2";
 const ARQUIVOS = [
   "./", "./index.html", "./style.css", "./app.js", "./curriculo.js", "./motor.js", "./manifest.webmanifest",
   "./icones/icone-192.png", "./icones/icone-512.png", "./icones/icone-maskable-192.png",
