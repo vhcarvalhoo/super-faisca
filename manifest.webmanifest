@@ -1,0 +1,21 @@
+{
+  "name": "Super Faísca — Letras & Números",
+  "short_name": "Super Faísca",
+  "description": "Aprender a ler, escrever e contar com o Super Faísca. Para crianças de 4 a 7 anos.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#e0f2fe",
+  "theme_color": "#38bdf8",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["education", "kids"],
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

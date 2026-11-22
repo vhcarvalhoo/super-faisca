@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#38bdf8">
+<meta name="description" content="Aprender a ler, escrever e contar com o Super Faísca. Para crianças de 4 a 7 anos.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Super Faísca">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Super Faísca — Letras & Números</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Herói original: o Faísca. Desenho em SVG, a cor da capa muda com --capa -->
+<template id="tpl-heroi">
+<svg class="heroi" viewBox="0 0 200 230" aria-label="Herói Faísca">
+  <g class="capa-g">
+    <path class="capa" d="M62 92 Q100 82 138 92 L170 205 Q150 214 132 205 Q116 216 100 206 Q84 216 68 205 Q50 214 30 205 Z"/>
+  </g>
+  <g class="braco-esq"><rect x="40" y="100" width="22" height="58" rx="11" class="traje"/><circle cx="51" cy="160" r="12" class="luva"/></g>
+  <g class="braco-dir"><rect x="138" y="100" width="22" height="58" rx="11" class="traje"/><circle cx="149" cy="160" r="12" class="luva"/></g>
+  <rect x="64" y="92" width="72" height="84" rx="26" class="traje"/>
+  <rect x="64" y="148" width="72" height="12" class="cinto"/>
+  <circle cx="100" cy="122" r="18" class="emblema-fundo"/>
+  <path d="M104 106 L90 124 L100 124 L95 139 L111 119 L101 119 Z" class="raio"/>
+  <rect x="70" y="170" width="24" height="40" rx="10" class="traje"/>
+  <rect x="106" y="170" width="24" height="40" rx="10" class="traje"/>
+  <rect x="66" y="198" width="32" height="18" rx="9" class="bota"/>
+  <rect x="102" y="198" width="32" height="18" rx="9" class="bota"/>
+  <circle cx="100" cy="56" r="40" class="pele"/>
+  <path d="M62 50 Q66 14 100 14 Q136 14 139 48 Q128 32 112 34 Q118 24 104 26 Q98 36 84 32 Q72 36 62 50 Z" class="cabelo"/>
+  <path d="M64 52 Q100 40 136 52 L134 66 Q118 72 104 64 L96 64 Q82 72 66 66 Z" class="mascara"/>
+  <ellipse cx="84" cy="57" rx="8" ry="7" fill="#fff"/><ellipse cx="116" cy="57" rx="8" ry="7" fill="#fff"/>
+  <circle cx="85" cy="58" r="4" class="olho"/><circle cx="117" cy="58" r="4" class="olho"/>
+  <circle cx="86.5" cy="56.5" r="1.4" fill="#fff"/><circle cx="118.5" cy="56.5" r="1.4" fill="#fff"/>
+  <path class="boca" d="M88 76 Q100 88 112 76" />
+  <circle cx="74" cy="74" r="5" fill="#ffb4a2" opacity=".7"/><circle cx="126" cy="74" r="5" fill="#ffb4a2" opacity=".7"/>
+</svg>
+</template>
+
+<div id="app">
+
+  <!-- INÍCIO -->
+  <section id="tela-inicio" class="tela ativa">
+    <div class="nuvens"></div>
+    <div class="inicio-box">
+      <div class="heroi-slot grande pulando"></div>
+      <h1 class="titulo-app">Super <span>Faísca</span></h1>
+      <p class="subtitulo">Letras &amp; Números</p>
+      <button id="btn-comecar" class="btn btn-grande btn-laranja">▶ Vamos lá!</button>
+    </div>
+  </section>
+
+  <!-- MAPA -->
+  <section id="tela-mapa" class="tela">
+    <header class="topo">
+      <button class="heroi-mini" id="btn-colecao" title="Minhas medalhas"><div class="heroi-slot"></div></button>
+      <div class="stat" title="Pontos de energia">⚡ <b id="st-xp">0</b></div>
+      <div class="stat" title="Dias seguidos">🔥 <b id="st-seq">0</b></div>
+      <div class="meta" id="st-meta" title="Missões de hoje"></div>
+      <button class="btn-pais" id="btn-pais" title="Área dos pais">👨‍👩‍👦</button>
+    </header>
+    <nav class="abas">
+      <button class="aba ativa" data-trilha="leitura">🔤 Letras</button>
+      <button class="aba" data-trilha="matematica">🔢 Números</button>
+    </nav>
+    <button id="btn-revisao" class="btn btn-roxo revisao escondido">⭐ Revisão do herói</button>
+    <div id="caminho" class="caminho"></div>
+  </section>
+
+  <!-- LIÇÃO -->
+  <section id="tela-licao" class="tela">
+    <header class="licao-topo">
+      <button id="btn-sair" class="btn-x" aria-label="Sair">✕</button>
+      <div class="barra"><div id="barra-progresso"></div></div>
+      <div class="heroi-slot pequeno" id="heroi-licao"></div>
+    </header>
+    <div class="licao-falar">
+      <button id="btn-ouvir" class="btn-som" aria-label="Ouvir de novo">🔊</button>
+    </div>
+    <main id="pergunta" class="pergunta"></main>
+    <footer id="feedback" class="feedback">
+      <div class="fb-texto"><span id="fb-icone"></span><span id="fb-msg"></span></div>
+      <button id="btn-continuar" class="btn btn-verde">Continuar ▶</button>
+    </footer>
+  </section>
+
+  <!-- FIM DA LIÇÃO -->
+  <section id="tela-fim" class="tela">
+    <div class="fim-box">
+      <div class="heroi-slot grande comemorando"></div>
+      <h2 id="fim-titulo">Missão cumprida!</h2>
+      <div id="fim-estrelas" class="estrelas"></div>
+      <div class="fim-xp">⚡ +<b id="fim-xp">0</b></div>
+      <div id="fim-premios" class="premios"></div>
+      <button id="btn-fim" class="btn btn-grande btn-verde">Continuar ▶</button>
+    </div>
+    <canvas id="confete"></canvas>
+  </section>
+
+  <!-- PAUSA (tempo de tela) -->
+  <section id="tela-pausa" class="tela">
+    <div class="fim-box">
+      <div class="heroi-slot grande dormindo"></div>
+      <h2>Hora de descansar os olhos!</h2>
+      <p class="pausa-txt">O <span class="nome-heroi">Faísca</span> foi recarregar a energia. Que tal uma missão de verdade?</p>
+      <ul class="pausa-ideias">
+        <li>🔍 Ache 3 coisas em casa que começam com a letra da lição</li>
+        <li>🪜 Conte os degraus ou os passos até a cozinha</li>
+        <li>📚 Peça para alguém ler uma história com você</li>
+        <li>🧱 Monte uma torre de 10 blocos</li>
+      </ul>
+      <button id="btn-pausa-pais" class="btn btn-cinza">Área dos pais</button>
+    </div>
+  </section>
+
+  <!-- COLEÇÃO -->
+  <section id="tela-colecao" class="tela">
+    <header class="licao-topo"><button class="btn-x" data-voltar>✕</button><h2>Meu herói</h2><span></span></header>
+    <div class="colecao">
+      <div class="heroi-slot grande"></div>
+      <h3>Escolha a cor da capa</h3>
+      <div id="lista-capas" class="capas"></div>
+      <h3>Medalhas</h3>
+      <div id="lista-medalhas" class="medalhas"></div>
+    </div>
+  </section>
+
+  <!-- ÁREA DOS PAIS -->
+  <section id="tela-pais" class="tela">
+    <header class="licao-topo"><button class="btn-x" data-voltar>✕</button><h2>Área dos pais</h2><span></span></header>
+    <div id="pais-portao" class="pais-portao">
+      <p>Para entrar, resolva:</p>
+      <p class="conta-pais" id="conta-pais"></p>
+      <input id="resp-pais" type="number" inputmode="numeric" placeholder="resposta">
+      <input id="senha-pais" type="password" placeholder="senha (se houver)" class="escondido">
+      <button id="btn-entrar-pais" class="btn btn-azul">Entrar</button>
+      <p id="pais-erro" class="erro"></p>
+    </div>
+    <div id="pais-conteudo" class="pais-conteudo escondido">
+      <div class="cartao">
+        <h3>Resumo</h3>
+        <div id="pais-resumo" class="pais-resumo"></div>
+        <div id="pais-semana" class="semana"></div>
+      </div>
+      <div class="cartao">
+        <h3>Habilidades <small>(acerto na 1ª tentativa)</small></h3>
+        <div id="pais-habilidades"></div>
+      </div>
+      <div class="cartao">
+        <h3>Configurações</h3>
+        <label>Nome da criança <input id="cfg-nome" maxlength="20"></label>
+        <label>Nome do herói <input id="cfg-heroi" maxlength="20"></label>
+        <label>Minutos de tela por dia <input id="cfg-minutos" type="number" min="5" max="60"></label>
+        <label>Missões por dia (meta) <input id="cfg-meta" type="number" min="1" max="6"></label>
+        <label>Velocidade da voz <input id="cfg-voz" type="range" min="0.6" max="1.1" step="0.05"></label>
+        <label>Senha da área dos pais (opcional) <input id="cfg-senha" type="password" maxlength="12"></label>
+        <div class="linha-btns">
+          <button id="btn-salvar-cfg" class="btn btn-azul">Salvar</button>
+          <button id="btn-testar-voz" class="btn btn-cinza">🔊 Testar voz</button>
+        </div>
+        <div class="linha-btns">
+          <button id="btn-liberar" class="btn btn-cinza">Liberar mais tempo hoje</button>
+          <button id="btn-zerar" class="btn btn-vermelho">Zerar progresso</button>
+        </div>
+        <div class="linha-btns">
+          <button id="btn-backup" class="btn btn-cinza">💾 Fazer backup</button>
+          <button id="btn-restaurar" class="btn btn-cinza">📂 Restaurar backup</button>
+          <input id="arquivo-backup" type="file" accept="application/json,.json" class="escondido">
+        </div>
+        <p id="cfg-ok" class="ok"></p>
+      </div>
+      <div class="cartao dicas">
+        <h3>Como acompanhar</h3>
+        <ul>
+          <li><b>Sente junto</b> nas primeiras missões. Repita os sons em voz alta com a criança.</li>
+          <li><b>Pouco e todo dia</b> vale mais que muito de vez em quando: 10–15 minutos bastam.</li>
+          <li><b>Leve para o mundo:</b> procure as letras da semana em rótulos, placas e livros.</li>
+          <li><b>Erro faz parte.</b> O app nunca pune; elogie o esforço, não a "inteligência".</li>
+          <li><b>Leia para ela todos os dias</b> — nenhum app substitui isso.</li>
+          <li><b>Privacidade:</b> o progresso fica só neste aparelho. Nada é enviado para a internet. Use "Fazer backup" antes de trocar de aparelho.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="curriculo.js"></script>
+<script src="motor.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
