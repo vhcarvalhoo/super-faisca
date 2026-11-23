@@ -483,3 +483,5 @@ select { font: inherit; font-size: 1.05rem; padding: 10px 12px; border-radius: 1
   .conta-box, .armada { font-size: 2.3rem; }
   .escolha-box h1 { font-size: 2rem; }
 }
+
+.dica-voz { color: var(--suave); font-weight: 600; }

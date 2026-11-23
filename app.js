@@ -17,16 +17,24 @@ let segundosPendentes = 0;
 /* ------------------------------------------------------------ voz */
 const Voz = {
   voz: null,
+  /** Vozes em português, da mais natural para a mais robótica. */
+  lista() {
+    if (!("speechSynthesis" in window)) return [];
+    const nota = (v) => (/pt[-_]BR/i.test(v.lang) ? 4 : 0)
+      + (/natural|online|neural|network|enhanced|premium|aprimorad|wavenet/i.test(v.name + " " + v.voiceURI) ? 6 : 0)
+      + (/francisca|thalita|antonio|luciana|felipe|google/i.test(v.name) ? 2 : 0) + (v.localService === false ? 1 : 0);
+    return speechSynthesis.getVoices().filter((v) => /^pt/i.test(v.lang)).sort((a, b) => nota(b) - nota(a));
+  },
+  ehNatural: (v) => /natural|online|neural|network|enhanced|premium|aprimorad|wavenet/i.test(v.name + " " + v.voiceURI),
+  escolher() {
+    const vs = this.lista();
+    const preferida = EST?.config?.voz_nome;
+    this.voz = vs.find((v) => v.name === preferida) || vs[0] || null;
+  },
   init() {
     if (!("speechSynthesis" in window)) return;
-    const escolher = () => {
-      const vs = speechSynthesis.getVoices();
-      const br = vs.filter((v) => /pt[-_]BR/i.test(v.lang));
-      this.voz = br.find((v) => /Francisca|Thalita|Luciana|Google|Maria|Natural/i.test(v.name))
-        || br[0] || vs.find((v) => /^pt/i.test(v.lang)) || null;
-    };
-    escolher();
-    speechSynthesis.onvoiceschanged = escolher;
+    this.escolher();
+    speechSynthesis.onvoiceschanged = () => { this.escolher(); if ($("#cfg-voz-nome")) preencherVozes(); };
   },
   falar(txt, { rate } = {}) {
     return new Promise((res) => {
@@ -40,7 +48,7 @@ const Voz = {
       u.lang = "pt-BR";
       if (this.voz) u.voice = this.voz;
       u.rate = rate || (EST?.config?.voz_velocidade ?? 0.85);
-      u.pitch = 1.1;
+      u.pitch = 1; // tom natural: subir o tom deixa a voz mais "robô"
       const btn = $("#btn-ouvir");
       let feito = false;
       const fim = () => { if (feito) return; feito = true; btn?.classList.remove("falando"); fimLegenda(); };
@@ -165,6 +173,7 @@ setInterval(() => {
 /* ------------------------------------------------------------ início e mapa */
 async function carregar() {
   EST = await api("/api/estado");
+  Voz.escolher();
   aplicarCapa();
 }
 
@@ -967,10 +976,20 @@ async function preencherPais() {
   $("#cfg-nome").value = c.nome_crianca; $("#cfg-heroi").value = P().nome;
   $("#cfg-personagem").value = EST.personagem || "faisca";
   $("#cfg-som").checked = c.som !== false; $("#cfg-tudo").checked = !!c.liberar_tudo;
+  preencherVozes();
   Conta.preencherCartao();
   $("#cfg-minutos").value = c.minutos_dia; $("#cfg-meta").value = c.meta_licoes;
   $("#cfg-voz").value = c.voz_velocidade; $("#cfg-senha").value = "";
 }
+function preencherVozes() {
+  const sel = $("#cfg-voz-nome");
+  const vs = Voz.lista();
+  sel.innerHTML = vs.length
+    ? vs.map((v) => `<option value="${esc(v.name)}">${Voz.ehNatural(v) ? "✨ " : ""}${esc(v.name)}${v.localService === false ? " (precisa de internet)" : ""}</option>`).join("")
+    : '<option value="">Nenhuma voz em português neste aparelho</option>';
+  sel.value = Voz.voz?.name || "";
+}
+
 async function salvarConfig() {
   const pers = $("#cfg-personagem").value;
   const nomeP = $("#cfg-heroi").value.trim();
@@ -981,6 +1000,7 @@ async function salvarConfig() {
     minutos_dia: Math.max(5, Math.min(60, Number($("#cfg-minutos").value) || 15)),
     meta_licoes: Math.max(1, Math.min(6, Number($("#cfg-meta").value) || 2)),
     voz_velocidade: Number($("#cfg-voz").value) || 0.85,
+    voz_nome: $("#cfg-voz-nome").value,
   };
   if (!trocou && nomeP) dados[pers === "fada" ? "nome_fada" : "nome_heroi"] = nomeP;
   if ($("#cfg-senha").value) dados.senha_pais = $("#cfg-senha").value;
@@ -1030,7 +1050,11 @@ function ligar() {
   $("#btn-entrar-pais").onclick = entrarPais;
   $("#resp-pais").onkeydown = (e) => { if (e.key === "Enter") entrarPais(); };
   $("#btn-salvar-cfg").onclick = salvarConfig;
-  $("#btn-testar-voz").onclick = () => { EST.config.voz_velocidade = Number($("#cfg-voz").value); EST.config.som = true; Voz.falar("Oi! B com A faz ba. Bola!"); };
+  $("#btn-testar-voz").onclick = () => {
+    EST.config.voz_velocidade = Number($("#cfg-voz").value); EST.config.som = true; EST.config.voz_nome = $("#cfg-voz-nome").value;
+    Voz.escolher(); Voz.falar("Oi! Vamos ler juntos? B com A faz ba. Bola! Três mais dois é igual a cinco.");
+  };
+  $("#cfg-voz-nome").onchange = () => $("#btn-testar-voz").click();
   $("#btn-liberar").onclick = async () => { EST = await api("/api/pais/liberar", {}); $("#cfg-ok").textContent = "Tempo de hoje liberado."; preencherPais(); };
   $("#btn-zerar").onclick = async () => {
     const t = prompt('Isso apaga todo o progresso. Digite ZERAR para confirmar:');

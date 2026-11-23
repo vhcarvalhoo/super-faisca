@@ -53,7 +53,7 @@ const Motor = (() => {
   function estadoInicial() {
     return {
       config: { nome_crianca: "", personagem: null, nome_heroi: "Faísca", nome_fada: "Lumi", capa: "laranja", capa_fada: "rosa",
-        minutos_dia: 15, meta_licoes: 2, voz_velocidade: 0.85, som: true, liberar_tudo: false, senha_pais: "" },
+        minutos_dia: 15, meta_licoes: 2, voz_velocidade: 0.9, voz_nome: "", som: true, liberar_tudo: false, senha_pais: "" },
       xp: 0, licoes: {}, habilidades: {}, medalhas: [], dias: {}, sequencia: 0, ultimo_dia: null, criado: hoje(),
     };
   }
@@ -237,7 +237,7 @@ const Motor = (() => {
 
   /* ---------- "API" local: mesmas rotas que a versão com servidor ---------- */
   const CONFIG_PERMITIDA = ["nome_crianca", "personagem", "nome_heroi", "nome_fada", "capa", "capa_fada", "minutos_dia", "meta_licoes",
-    "voz_velocidade", "som", "liberar_tudo", "senha_pais"];
+    "voz_velocidade", "voz_nome", "som", "liberar_tudo", "senha_pais"];
 
   async function api(caminho, dados) {
     const est = carregar();
