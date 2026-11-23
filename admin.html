@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Super Faísca — Painel de administração</title>
+<style>
+  :root { --azul: #2563eb; --verde: #16a34a; --vermelho: #dc2626; --amarelo: #d97706; --cinza: #64748b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: #f1f5f9; color: #0f172a; }
+  header { background: #1e3a8a; color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1.25rem; }
+  main { max-width: 1200px; margin: 0 auto; padding: 18px; }
+  .cartao { background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 16px; }
+  .login { max-width: 380px; margin: 60px auto; }
+  label { display: block; font-weight: 600; margin: 10px 0 4px; }
+  input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; }
+  button { font: inherit; border: 0; border-radius: 9px; padding: 9px 14px; cursor: pointer; font-weight: 600; background: #e2e8f0; color: #0f172a; }
+  button.prim { background: var(--azul); color: #fff; }
+  button.ok { background: #dcfce7; color: #166534; }
+  button.perigo { background: #fee2e2; color: #991b1b; }
+  button:disabled { opacity: .5; cursor: wait; }
+  .erro { color: var(--vermelho); font-weight: 600; } .info { color: var(--cinza); }
+  .resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .num { background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); cursor: pointer; border: 2px solid transparent; }
+  .num.sel { border-color: var(--azul); }
+  .num b { display: block; font-size: 1.8rem; }
+  .barra { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 16px 0; }
+  .barra input { flex: 1; min-width: 220px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: .93rem; }
+  th { background: #f8fafc; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cinza); }
+  .tag { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: .8rem; font-weight: 700; }
+  .tag.teste { background: #dbeafe; color: #1e40af; } .tag.liberado { background: #dcfce7; color: #166534; }
+  .tag.expirado { background: #fef3c7; color: #92400e; } .tag.bloqueado { background: #fee2e2; color: #991b1b; }
+  .acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+  .acoes button { padding: 6px 9px; font-size: .82rem; }
+  .obs { color: var(--cinza); font-size: .85rem; }
+  .vazio { text-align: center; padding: 30px; color: var(--cinza); }
+  @media (max-width: 760px) { thead { display: none; } tr { display: block; border-bottom: 6px solid #f1f5f9; } td { display: block; border: 0; padding: 6px 12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ Super Faísca — Painel de administração</h1>
+  <div id="quem" class="escondido"></div>
+</header>
+<main>
+  <div id="area-login" class="cartao login">
+    <h2>Entrar como administrador</h2>
+    <p class="info">Use o e-mail que você cadastrou na tabela <b>admins</b> do Supabase.</p>
+    <label>E-mail <input id="email" type="email" autocomplete="email"></label>
+    <label>Senha <input id="senha" type="password" autocomplete="current-password"></label>
+    <p><button class="prim" id="entrar">Entrar</button></p>
+    <p id="msg-login" class="erro"></p>
+  </div>
+
+  <div id="area-painel" hidden>
+    <div class="resumo" id="resumo"></div>
+    <div class="barra">
+      <input id="busca" placeholder="Buscar por e-mail, nome ou observação...">
+      <button id="atualizar">↻ Atualizar</button>
+      <button id="copiar">Copiar e-mails da lista</button>
+      <button id="sair">Sair</button>
+    </div>
+    <table>
+      <thead><tr><th>Conta</th><th>Situação</th><th>Datas</th><th>Ações</th></tr></thead>
+      <tbody id="linhas"></tbody>
+    </table>
+    <p class="info" id="msg-painel"></p>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+const CFG = window.SUPER_FAISCA_CONFIG || {};
+const $ = (s) => document.querySelector(s);
+let sessao = null, contas = [], filtro = "todos";
+
+async function req(caminho, { method = "GET", body, token } = {}) {
+  const r = await fetch(CFG.supabaseUrl.replace(/\/$/, "") + caminho, {
+    method, headers: { apikey: CFG.supabaseAnonKey, "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const t = await r.text(); let d = null; try { d = t ? JSON.parse(t) : null; } catch (e) { d = t; }
+  if (!r.ok) throw new Error(d?.msg || d?.error_description || d?.message || `Erro ${r.status}`);
+  return d;
+}
+const rpc = (nome, body = {}) => req(`/rest/v1/rpc/${nome}`, { method: "POST", body, token: sessao.access_token });
+const data = (iso) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "—");
+const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const dias = (iso) => Math.ceil((new Date(iso) - Date.now()) / 86400000);
+const NOMES = { teste: "Em teste", liberado: "Liberado", expirado: "Teste acabou", bloqueado: "Bloqueado" };
+
+async function entrar() {
+  $("#msg-login").textContent = "";
+  if (!CFG.supabaseUrl) { $("#msg-login").textContent = "Preencha supabaseUrl e supabaseAnonKey no arquivo config.js."; return; }
+  $("#entrar").disabled = true;
+  try {
+    sessao = await req("/auth/v1/token?grant_type=password", { method: "POST", body: { email: $("#email").value.trim(), password: $("#senha").value } });
+    if (!(await rpc("sou_admin"))) { sessao = null; throw new Error("Este e-mail não está na tabela de administradores (admins)."); }
+    sessionStorage.setItem("sf-admin", JSON.stringify(sessao));
+    abrirPainel();
+  } catch (e) { $("#msg-login").textContent = /invalid/i.test(e.message) ? "E-mail ou senha incorretos." : e.message; }
+  finally { $("#entrar").disabled = false; }
+}
+
+async function abrirPainel() {
+  $("#area-login").hidden = true; $("#area-painel").hidden = false;
+  $("#quem").textContent = sessao.user?.email || "";
+  await carregar();
+}
+
+async function carregar() {
+  $("#msg-painel").textContent = "Carregando...";
+  try { contas = await rpc("admin_lista"); $("#msg-painel").textContent = ""; }
+  catch (e) {
+    if (/jwt|expired/i.test(e.message)) { sessionStorage.removeItem("sf-admin"); location.reload(); return; }
+    $("#msg-painel").textContent = "Erro: " + e.message;
+  }
+  desenhar();
+}
+
+function desenhar() {
+  const cont = { todos: contas.length, teste: 0, liberado: 0, expirado: 0, bloqueado: 0 };
+  contas.forEach((c) => cont[c.status]++);
+  $("#resumo").innerHTML = [["todos", "Todas as contas"], ["teste", "Em teste"], ["expirado", "Teste acabou (cobrar)"], ["liberado", "Liberadas"], ["bloqueado", "Bloqueadas"]]
+    .map(([k, n]) => `<div class="num ${filtro === k ? "sel" : ""}" data-f="${k}"><b>${cont[k]}</b>${n}</div>`).join("");
+  document.querySelectorAll(".num").forEach((d) => (d.onclick = () => { filtro = d.dataset.f; desenhar(); }));
+  const busca = $("#busca").value.trim().toLowerCase();
+  const lista = contas.filter((c) => (filtro === "todos" || c.status === filtro) &&
+    (!busca || [c.email, c.nome, c.observacao].some((x) => (x || "").toLowerCase().includes(busca))));
+  $("#linhas").innerHTML = lista.length ? lista.map((c) => {
+    const prazo = c.status === "teste" ? `teste até ${data(c.teste_ate)} (${dias(c.teste_ate)} dia(s))`
+      : c.status === "liberado" ? (new Date(c.liberado_ate).getFullYear() >= 2099 ? "sem prazo" : `até ${data(c.liberado_ate)} (${dias(c.liberado_ate)} dia(s))`)
+      : c.liberado_ate ? `acesso venceu em ${data(c.liberado_ate)}` : `teste venceu em ${data(c.teste_ate)}`;
+    return `<tr data-id="${c.user_id}">
+      <td><b>${esc(c.email)}</b><br>${esc(c.nome || "")}${c.observacao ? `<div class="obs">📝 ${esc(c.observacao)}</div>` : ""}</td>
+      <td><span class="tag ${c.status}">${NOMES[c.status]}</span><br><small>${prazo}</small></td>
+      <td><small>Cadastro: ${data(c.criado_em)}</small></td>
+      <td class="acoes">
+        <button class="ok" data-a="lib" data-v="30">+30 dias</button>
+        <button class="ok" data-a="lib" data-v="365">+1 ano</button>
+        <button class="ok" data-a="sempre">Sem prazo</button>
+        <button data-a="teste" data-v="7">+7 dias de teste</button>
+        <button data-a="tirar">Tirar liberação</button>
+        ${c.bloqueado ? '<button data-a="desbloq">Desbloquear</button>' : '<button class="perigo" data-a="bloq">Bloquear</button>'}
+        <button data-a="obs">📝 Nota</button>
+      </td></tr>`;
+  }).join("") : `<tr><td colspan="4" class="vazio">Nenhuma conta aqui.</td></tr>`;
+  document.querySelectorAll("#linhas button").forEach((b) => (b.onclick = () => acao(b)));
+}
+
+async function acao(b) {
+  const id = b.closest("tr").dataset.id, c = contas.find((x) => x.user_id === id), a = b.dataset.a;
+  try {
+    b.disabled = true;
+    if (a === "lib") await rpc("admin_liberar", { alvo: id, dias: Number(b.dataset.v) });
+    if (a === "sempre") await rpc("admin_definir", { alvo: id, ate: "2100-01-01T00:00:00Z" });
+    if (a === "tirar") { if (!confirm(`Tirar a liberação de ${c.email}?`)) return; await rpc("admin_definir", { alvo: id, ate: null }); }
+    if (a === "teste") await rpc("admin_estender_teste", { alvo: id, dias: Number(b.dataset.v) });
+    if (a === "bloq") { if (!confirm(`Bloquear ${c.email}?`)) return; await rpc("admin_bloquear", { alvo: id, bloquear: true }); }
+    if (a === "desbloq") await rpc("admin_bloquear", { alvo: id, bloquear: false });
+    if (a === "obs") { const t = prompt(`Nota para ${c.email} (ex.: "pagou Pix 10/12"):`, c.observacao || ""); if (t === null) return; await rpc("admin_observacao", { alvo: id, texto: t }); }
+    await carregar();
+    $("#msg-painel").textContent = `✓ Atualizado: ${c.email}`;
+  } catch (e) { alert("Não deu certo: " + e.message); }
+  finally { b.disabled = false; }
+}
+
+$("#entrar").onclick = entrar;
+$("#senha").onkeydown = (e) => { if (e.key === "Enter") entrar(); };
+$("#atualizar").onclick = carregar;
+$("#busca").oninput = desenhar;
+$("#sair").onclick = () => { sessionStorage.removeItem("sf-admin"); location.reload(); };
+$("#copiar").onclick = () => {
+  const busca = $("#busca").value.trim().toLowerCase();
+  const emails = contas.filter((c) => (filtro === "todos" || c.status === filtro) && (!busca || (c.email + (c.nome || "")).toLowerCase().includes(busca))).map((c) => c.email);
+  navigator.clipboard?.writeText(emails.join(", "));
+  $("#msg-painel").textContent = `${emails.length} e-mail(s) copiados.`;
+};
+try { const s = JSON.parse(sessionStorage.getItem("sf-admin") || "null"); if (s) { sessao = s; abrirPainel(); } } catch (e) { /* nada */ }
+</script>
+</body>
+</html>

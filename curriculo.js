@@ -264,7 +264,7 @@ const Curriculo = (() => {
   /** Problemas aditivos (Nunes & Bryant): composição, transformação, comparação. */
   function qHistoria(hi) {
     const tipo = choice(["ganhou", "perdeu", "juntou", "comparou"]);
-    const o = obj(), nome = choice(["O Faísca", "A Luna", "O Teo", "A Bia"]);
+    const o = obj(), nome = choice(["O Rafa", "A Luna", "O Teo", "A Bia"]);
     const a = randint(2, hi - 2), g = o[3], q = quantos(o, false);
     let b, fala, ans, vis;
     if (tipo === "ganhou") {
@@ -285,7 +285,7 @@ const Curriculo = (() => {
       fala = `${nome} tem ${nomeQtd(a, o)}. O amigo tem ${ext(b, g)}. ${cap(q)} ${o[2]} a mais ${lower(art)} ${nm} tem?`;
       ans = a - b; vis = ["cmp", a, b];
     }
-    return { type: "story", speech: fala, emoji: o[0], visual: vis, choices: numChoices(ans, 0, 10), answer: ans, skill: `historia:${tipo}` };
+    return { type: "story", speech: fala, emoji: o[0], visual: vis, choices: numChoices(ans, 0, Math.max(10, hi)), answer: ans, skill: `historia:${tipo}` };
   }
 
   function qPadrao(nivel) {
@@ -412,7 +412,19 @@ const Curriculo = (() => {
         { id: "M7-3", title: "Fila até 20", icon: "🚀", gen: ["m_sequencia", 20] },
       ] },
     ];
-    return { leitura, matematica };
+    // unidades novas (curriculo_extra.js) entram depois das originais
+    for (const u of EXTRAS.leitura) leitura.push(u);
+    for (const u of EXTRAS.matematica) matematica.push(u);
+    return JSON.parse(JSON.stringify({ leitura, matematica }));
+  }
+
+  /* ---------- extensões: outras listas de lições se registram aqui ---------- */
+  const EXTRAS = { leitura: [], matematica: [] };
+  const GERADORES = {};
+  function registrar({ leitura = [], matematica = [] }, geradores) {
+    EXTRAS.leitura.push(...leitura);
+    EXTRAS.matematica.push(...matematica);
+    Object.assign(GERADORES, geradores);
   }
 
   const vezes = (n, f) => range(0, n).map(f);
@@ -455,6 +467,10 @@ const Curriculo = (() => {
       case "m_historia": return vezes(7, () => qHistoria(p1));
       case "m_abstrato": return shuffle([...vezes(4, () => qJuntarNum(10, true)), ...vezes(4, () => qTirar(10, true))]);
       case "m_dezena": return [...vezes(7, () => qDezena(p1)), qSequencia(20, "depois")];
+      case "x": {
+        if (!GERADORES[p1]) throw new Error("Gerador desconhecido: " + p1);
+        return GERADORES[p1](...gen.slice(2));
+      }
       default: throw new Error("Receita desconhecida: " + JSON.stringify(gen));
     }
   }
@@ -468,7 +484,13 @@ const Curriculo = (() => {
     return out;
   }
 
-  return { construirTrilhas, gerarLicao, mapaLicoes, sample, shuffle };
+  // ferramentas usadas pelas lições extras
+  const util = { randint, choice, shuffle, sample, uniq, range, ext, nomeQtd, quantos, cap, lower, semAcento,
+    NOMES_NUM, OBJETOS, VOGAIS, LETRAS, PALAVRAS, FRASES, familia, palavrasCom,
+    qIntroLetra, qJuntar, qOuvirSilaba, qTracar, qMontarPalavra, qLerPalavra, qSilabaFaltando, qLerFrase,
+    qHistoria, qJuntarNum, qTirar, qSequencia, qQuadroDez, qDezena, qComparar, qMaiorNumero, qContar, numChoices };
+
+  return { construirTrilhas, gerarLicao, mapaLicoes, sample, shuffle, registrar, util };
 })();
 
 if (typeof module !== "undefined") module.exports = Curriculo; // para testes no Node

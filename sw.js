@@ -1,8 +1,9 @@
 /* Service worker do Super Faísca: guarda o app no aparelho para funcionar sem internet.
    Ao publicar uma versão nova, aumente o número em VERSAO para o tablet baixar os arquivos novos. */
-const VERSAO = "super-faisca-v2";
+const VERSAO = "super-faisca-v3";
 const ARQUIVOS = [
-  "./", "./index.html", "./style.css", "./app.js", "./curriculo.js", "./motor.js", "./manifest.webmanifest",
+  "./", "./index.html", "./style.css", "./app.js", "./curriculo.js", "./curriculo_extra.js", "./motor.js", "./conta.js", "./config.js",
+  "./manifest.webmanifest", "./privacidade.html",
   "./icones/icone-192.png", "./icones/icone-512.png", "./icones/icone-maskable-192.png",
   "./icones/icone-maskable-512.png", "./icones/apple-touch-icon.png",
 ];
@@ -22,6 +23,13 @@ self.addEventListener("activate", (e) => {
 // Primeiro o que está guardado (abre instantâneo e offline); se não tiver, busca na internet.
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin || url.pathname.endsWith("admin.html")) return; // login e painel: sempre pela internet
+  // config.js: tenta a versão mais nova primeiro (para mudanças de preço/Pix chegarem logo)
+  if (url.pathname.endsWith("config.js")) {
+    e.respondWith(fetch(e.request).then((r) => { const c = r.clone(); caches.open(VERSAO).then((k) => k.put(e.request, c)); return r; }).catch(() => caches.match(e.request)));
+    return;
+  }
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((guardado) =>
       guardado || fetch(e.request).then((resp) => {

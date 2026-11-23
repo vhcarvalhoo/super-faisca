@@ -5,7 +5,7 @@
 const Motor = (() => {
   const CHAVE = "superfaisca:progresso:v1";
 
-  // Recompensas: cores de capa liberadas por pontos
+  // Recompensas: cores liberadas por pontos (capa do Faísca, vestido e asas da Fada)
   const CAPAS = [
     { id: "laranja", nome: "Laranja", cor: "#ff8a1f", xp: 0 },
     { id: "turquesa", nome: "Turquesa", cor: "#14b8a6", xp: 50 },
@@ -15,13 +15,33 @@ const Motor = (() => {
     { id: "dourado", nome: "Dourado", cor: "#eab308", xp: 650 },
     { id: "galaxia", nome: "Galáxia", cor: "#1e3a8a", xp: 900 },
   ];
+  const CORES_FADA = [
+    { id: "rosa", nome: "Rosa", cor: "#ec4899", xp: 0 },
+    { id: "lilas", nome: "Lilás", cor: "#a78bfa", xp: 50 },
+    { id: "menta", nome: "Menta", cor: "#34d399", xp: 150 },
+    { id: "ceu", nome: "Céu", cor: "#38bdf8", xp: 300 },
+    { id: "coral", nome: "Coral", cor: "#fb7185", xp: 450 },
+    { id: "dourada", nome: "Dourada", cor: "#eab308", xp: 650 },
+    { id: "estrelada", nome: "Estrelada", cor: "#4338ca", xp: 900 },
+  ];
+  // Evoluções visuais (valem para os dois personagens)
+  const NIVEIS = [
+    { nivel: 1, nome: "Aprendiz", xp: 0, icone: "🌱" },
+    { nivel: 2, nome: "Brilho mágico", xp: 300, icone: "✨" },
+    { nivel: 3, nome: "Coroa de campeão", xp: 650, icone: "👑" },
+  ];
+  const coresDe = (p) => (p === "fada" ? CORES_FADA : CAPAS);
+  const nivelDe = (xp) => NIVEIS.filter((n) => xp >= n.xp).pop().nivel;
   const MEDALHAS = [
     ["primeira", "Primeira missão", "🚀"], ["vogais", "Mestre das vogais", "🅰️"], ["palavras", "Primeiras palavras", "📖"],
     ["leitor", "Pequeno leitor", "📚"], ["contador", "Contador até 5", "🖐️"], ["dez", "Amigo do dez", "🔟"],
     ["somador", "Juntar e tirar", "➕"], ["vinte", "Até 20!", "🏅"], ["perfeito", "Lição perfeita", "🌟"],
     ["seq3", "3 dias seguidos", "🔥"], ["seq7", "7 dias seguidos", "🌈"], ["xp500", "500 pontos", "💎"],
+    ["digrafos", "Mestre do CH, LH e NH", "🧩"], ["textos", "Leitor de histórias", "📜"], ["superleitor", "Super leitor", "🏆"],
+    ["cem", "Até 100!", "💯"], ["tabuada", "Tabuada na ponta da língua", "✖️"], ["genio", "Gênio da matemática", "🧠"], ["xp2000", "2000 pontos", "🚀"],
   ];
-  const MEDALHA_POR_UNIDADE = { L1: "vogais", L2: "palavras", L6: "leitor", M1: "contador", M2: "dez", M5: "somador", M7: "vinte" };
+  const MEDALHA_POR_UNIDADE = { L1: "vogais", L2: "palavras", L6: "leitor", M1: "contador", M2: "dez", M5: "somador", M7: "vinte",
+    L9: "digrafos", L19: "textos", L20: "superleitor", M10: "cem", M21: "tabuada", M22: "genio" };
 
   /* ---------- datas (sempre no fuso do aparelho) ---------- */
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -32,7 +52,8 @@ const Motor = (() => {
   /* ---------- armazenamento ---------- */
   function estadoInicial() {
     return {
-      config: { nome_crianca: "", nome_heroi: "Faísca", capa: "laranja", minutos_dia: 15, meta_licoes: 2, voz_velocidade: 0.85, senha_pais: "" },
+      config: { nome_crianca: "", personagem: null, nome_heroi: "Faísca", nome_fada: "Lumi", capa: "laranja", capa_fada: "rosa",
+        minutos_dia: 15, meta_licoes: 2, voz_velocidade: 0.85, som: true, liberar_tudo: false, senha_pais: "" },
       xp: 0, licoes: {}, habilidades: {}, medalhas: [], dias: {}, sequencia: 0, ultimo_dia: null, criado: hoje(),
     };
   }
@@ -63,7 +84,7 @@ const Motor = (() => {
           const info = est.licoes[l.id] || {};
           l.stars = info.estrelas || 0;
           l.done = (info.vezes || 0) > 0;
-          l.unlocked = anteriorOk || l.done;
+          l.unlocked = anteriorOk || l.done || !!est.config.liberar_tudo;
           anteriorOk = l.done;
           delete l.gen;
         }
@@ -77,10 +98,12 @@ const Motor = (() => {
     let sequencia = est.sequencia;
     if (est.ultimo_dia && est.ultimo_dia < diasAtras(1)) sequencia = 0; // perdeu a sequência
     const { senha_pais, ...config } = est.config;
+    const p = config.personagem || "faisca";
     return {
       config, tem_senha: !!senha_pais, xp: est.xp, sequencia,
       hoje: { ...(est.dias[hoje()] || { licoes: 0, segundos: 0, xp: 0 }) },
-      capas: CAPAS,
+      personagem: p, capas: coresDe(p), capa_atual: p === "fada" ? config.capa_fada : config.capa,
+      nivel: nivelDe(est.xp), niveis: NIVEIS,
       medalhas: MEDALHAS.map(([id, nome, icone]) => ({ id, nome, icone, tem: est.medalhas.includes(id) })),
       trilhas: trilhasComStatus(est),
       revisao_disponivel: licoesParaRevisar(est).length > 0,
@@ -167,6 +190,7 @@ const Motor = (() => {
     if (est.sequencia >= 3) medalha("seq3");
     if (est.sequencia >= 7) medalha("seq7");
     if (est.xp >= 500) medalha("xp500");
+    if (est.xp >= 2000) medalha("xp2000");
     for (const unidades of Object.values(Curriculo.construirTrilhas())) {
       for (const u of unidades) {
         if (MEDALHA_POR_UNIDADE[u.id] && u.lessons.every((l) => (est.licoes[l.id]?.vezes || 0) > 0)) medalha(MEDALHA_POR_UNIDADE[u.id]);
@@ -177,7 +201,8 @@ const Motor = (() => {
     return {
       estrelas, xp, acerto: Math.round(acerto * 100) / 100,
       medalhas: novas.map((m) => ({ id: m, nome: nomes[m][0], icone: nomes[m][1] })),
-      capas: CAPAS.filter((c) => est.xp - xp < c.xp && c.xp <= est.xp),
+      capas: coresDe(est.config.personagem).filter((c) => est.xp - xp < c.xp && c.xp <= est.xp),
+      niveis: NIVEIS.filter((n) => est.xp - xp < n.xp && n.xp <= est.xp),
     };
   }
 
@@ -186,6 +211,10 @@ const Motor = (() => {
     frase: "Ler frases", contar: "Contagem", ver: "Ver sem contar", numeral: "Número e quantidade", comparar: "Comparar",
     sequencia: "Sequência numérica", dez: "Quadro de dez", somar: "Juntar (adição)", tirar: "Tirar (subtração)",
     compor: "Partes de um número", historia: "Problemas em histórias", padrao: "Padrões", forma: "Formas", dezena: "Dezenas (até 20)",
+    grafia: "Novas letras e sons", minuscula: "Letras minúsculas", orto: "Ortografia", fono: "Rimas e sílabas", texto: "Entender textos",
+    gram: "Palavras e sentidos", num20: "Números até 20", conta: "Contas até 20", num100: "Números até 100", dinheiro: "Dinheiro",
+    medida: "Medidas", tempo: "Tempo e relógio", geo: "Geometria", conta100: "Contas até 100", mult: "Multiplicação", tabuada: "Tabuada",
+    div: "Divisão", num1000: "Números até 1000", fracao: "Frações", dados: "Tabelas e gráficos", chance: "Chances", desafio: "Desafios",
   };
 
   function relatorio(est) {
@@ -207,7 +236,8 @@ const Motor = (() => {
   }
 
   /* ---------- "API" local: mesmas rotas que a versão com servidor ---------- */
-  const CONFIG_PERMITIDA = ["nome_crianca", "nome_heroi", "capa", "minutos_dia", "meta_licoes", "voz_velocidade", "senha_pais"];
+  const CONFIG_PERMITIDA = ["nome_crianca", "personagem", "nome_heroi", "nome_fada", "capa", "capa_fada", "minutos_dia", "meta_licoes",
+    "voz_velocidade", "som", "liberar_tudo", "senha_pais"];
 
   async function api(caminho, dados) {
     const est = carregar();

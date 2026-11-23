@@ -1,6 +1,7 @@
 /* Super Faísca — Letras & Números (interface)
-   O conteúdo das lições vem do Python (curriculo.py). Aqui ficam só o
-   desenho das telas, a voz, os sons e o fluxo estilo "trilha". */
+   O conteúdo das lições vem de curriculo.js e curriculo_extra.js. Aqui ficam o
+   desenho das telas, a voz, as legendas, os sons e o fluxo estilo "trilha".
+   Regra de ouro: tudo o que é falado também aparece escrito na tela. */
 "use strict";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -29,7 +30,11 @@ const Voz = {
   },
   falar(txt, { rate } = {}) {
     return new Promise((res) => {
-      if (!("speechSynthesis" in window) || !txt) return res();
+      if (!txt) return res();
+      Legenda.mostrar(txt);
+      const fimLegenda = () => { Legenda.terminou(txt); res(); };
+      // sem som (ou aparelho sem voz): só o texto, com tempo para ler
+      if (!somLigado() || !("speechSynthesis" in window)) { setTimeout(fimLegenda, 700 + txt.length * 45); return; }
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(txt);
       u.lang = "pt-BR";
@@ -38,7 +43,7 @@ const Voz = {
       u.pitch = 1.1;
       const btn = $("#btn-ouvir");
       let feito = false;
-      const fim = () => { if (feito) return; feito = true; btn?.classList.remove("falando"); res(); };
+      const fim = () => { if (feito) return; feito = true; btn?.classList.remove("falando"); fimLegenda(); };
       u.onend = fim; u.onerror = fim;
       setTimeout(fim, 1800 + txt.length * 110); // segurança: alguns navegadores não disparam onend
       btn?.classList.add("falando");
@@ -46,6 +51,41 @@ const Voz = {
     });
   },
   parar() { if ("speechSynthesis" in window) speechSynthesis.cancel(); },
+};
+
+/* ------------------------------------------------------------ legendas */
+const Legenda = {
+  base: "", timer: null, timerGlobal: null,
+  naLicao: () => $("#tela-licao").classList.contains("ativa"),
+  /** Texto fixo da pergunta atual (volta para ele depois de falas curtas). */
+  definirBase(txt) { this.base = txt; clearTimeout(this.timer); $("#legenda-licao").textContent = txt; },
+  mostrar(txt) {
+    if (!txt) return;
+    txt = String(txt);
+    clearTimeout(this.timer);
+    if (this.naLicao()) { $("#legenda-licao").textContent = txt; return; }
+    const g = $("#legenda-global");
+    $("p", g).textContent = txt;
+    g.classList.add("mostrar");
+    clearTimeout(this.timerGlobal);
+    this.timerGlobal = setTimeout(() => g.classList.remove("mostrar"), Math.max(3500, txt.length * 90));
+  },
+  terminou(txt) {
+    if (!this.naLicao() || txt === this.base) return;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => { if (this.naLicao() && this.base) $("#legenda-licao").textContent = this.base; }, 1600);
+  },
+  limpar() { this.base = ""; $("#legenda-licao").textContent = ""; },
+};
+const somLigado = () => EST?.config?.som !== false;
+function atualizarBotoesSom() { $$(".btn-som-toggle").forEach((b) => { b.textContent = somLigado() ? "🔊" : "🔇"; b.title = somLigado() ? "Desligar o som" : "Ligar o som"; }); }
+
+/* ------------------------------------------------------------ personagem */
+const P = () => {
+  const fada = EST?.personagem === "fada";
+  const nome = fada ? (EST?.config?.nome_fada || "Lumi") : (EST?.config?.nome_heroi || "Faísca");
+  return { fada, nome, artigo: fada ? "a" : "o", oNome: `${fada ? "A" : "O"} ${nome}`, peca: fada ? "a cor do vestido e das asas" : "a cor da capa",
+    peca_curta: fada ? "cor" : "capa", titulo: fada ? "Minha fada" : "Meu herói", icone: fada ? "🧚" : "🦸" };
 };
 
 /* ------------------------------------------------------------ sons */
@@ -75,25 +115,39 @@ const Som = {
 // Tudo roda no aparelho: a "API" é o motor local (motor.js), sem servidor.
 const api = (path, body) => Motor.api(path, body || {});
 function mostrar(id) {
+  if (id === "tela-licao") { clearTimeout(Legenda.timerGlobal); $("#legenda-global").classList.remove("mostrar"); }
   $$(".tela").forEach((t) => t.classList.remove("ativa"));
   $("#" + id).classList.add("ativa");
   $("#" + id).scrollTop = 0;
 }
+/** Desenha o personagem certo em cada espaço (.heroi-slot). */
 function desenharHerois() {
-  const tpl = $("#tpl-heroi");
-  $$(".heroi-slot").forEach((s) => { if (!s.firstElementChild) s.appendChild(tpl.content.cloneNode(true)); });
+  const atual = EST?.personagem || "faisca";
+  $$(".heroi-slot").forEach((s) => {
+    const quem = s.dataset.personagem || atual;
+    if (s.dataset.desenhado === quem && s.firstElementChild) return;
+    s.innerHTML = "";
+    s.appendChild($(quem === "fada" ? "#tpl-fada" : "#tpl-faisca").content.cloneNode(true));
+    s.dataset.desenhado = quem;
+  });
 }
 function aplicarCapa() {
-  const capa = EST.capas.find((c) => c.id === EST.config.capa) || EST.capas[0];
-  document.documentElement.style.setProperty("--capa", capa.cor);
-  $$(".nome-heroi").forEach((e) => (e.textContent = EST.config.nome_heroi || "Faísca"));
+  const cor = EST.capas.find((c) => c.id === EST.capa_atual) || EST.capas[0];
+  const raiz = document.documentElement;
+  raiz.style.setProperty("--capa", cor.cor);
+  raiz.dataset.nivel = EST.nivel || 1;
+  raiz.dataset.personagem = EST.personagem || "faisca";
+  $$(".nome-heroi").forEach((e) => (e.textContent = P().nome));
+  $$(".artigo-nome").forEach((e) => (e.textContent = P().oNome));
+  atualizarBotoesSom();
+  desenharHerois();
 }
 function reagir(classe) {
   const h = $("#heroi-licao");
   h.classList.remove("feliz", "pensando"); void h.offsetWidth; h.classList.add(classe);
   setTimeout(() => h.classList.remove(classe), 1100);
 }
-const nomeHeroi = () => EST.config.nome_heroi || "Faísca";
+const nomeHeroi = () => P().nome;
 const nomeCrianca = () => EST.config.nome_crianca || "";
 
 /* ------------------------------------------------------------ tempo de tela */
@@ -117,11 +171,22 @@ async function carregar() {
 async function comecar() {
   Som.toque();
   await carregar();
+  Conta.checarEmSegundoPlano();
+  if (!EST.config.personagem) { mostrar("tela-escolha"); desenharHerois(); Voz.falar("Quem vai jogar? Escolha o seu personagem."); return; }
   if (tempoEsgotado()) return mostrarPausa();
   mostrar("tela-mapa");
   renderMapa();
   const nome = nomeCrianca();
-  Voz.falar(`Oi${nome ? ", " + nome : ""}! Eu sou o ${nomeHeroi()}. Escolha uma missão!`);
+  Voz.falar(`Oi${nome ? ", " + nome : ""}! Eu sou ${P().artigo} ${P().nome}. Escolha uma missão!`);
+}
+
+async function escolherPersonagem(p) {
+  Som.certo();
+  EST = await api("/api/config", { personagem: p });
+  aplicarCapa();
+  mostrar("tela-mapa");
+  renderMapa();
+  Voz.falar(p === "fada" ? "Oi! Eu sou a Fada Lumi. Vamos aprender juntas? Escolha uma missão!" : "Oi! Eu sou o Super Faísca. Vamos aprender juntos? Escolha uma missão!");
 }
 
 const CORES_UNIDADE = ["#f97316", "#3b82f6", "#8b5cf6", "#10b981", "#ec4899", "#eab308", "#06b6d4"];
@@ -193,6 +258,7 @@ function proxima() {
   $("#barra-progresso").style.width = `${(L.pos / L.fila.length) * 100}%`;
   const el = $("#pergunta");
   el.innerHTML = "";
+  Legenda.definirBase(q.type === "syllable_hear" ? `${q.speech} ${q.say}` : q.speech);
   (R[q.type] || R.desconhecido)(q, el);
   if (!q._falaPropria) falarPergunta(q);
 }
@@ -281,19 +347,22 @@ async function finalizar() {
   $("#fim-xp").textContent = res.xp;
   const premios = [
     ...res.medalhas.map((m) => `<div class="premio">${m.icone} Nova medalha: ${m.nome}!</div>`),
-    ...res.capas.filter((c) => c.xp > 0).map((c) => `<div class="premio"><span style="color:${c.cor}">⬤</span> Nova capa: ${c.nome}! Toque no herói para trocar.</div>`),
+    ...res.capas.filter((c) => c.xp > 0).map((c) => `<div class="premio"><span style="color:${c.cor}">⬤</span> Nova ${P().peca_curta}: ${c.nome}! Toque ${P().fada ? "na fada" : "no herói"} para trocar.</div>`),
+    ...(res.niveis || []).filter((n) => n.xp > 0).map((n) => `<div class="premio">${n.icone} Evolução: ${n.nome}!</div>`),
   ];
   $("#fim-premios").innerHTML = premios.join("");
   const nome = nomeCrianca();
   let fala = `${["", "Boa tentativa", "Muito bem", "Missão perfeita"][res.estrelas]}${nome ? ", " + nome : ""}! Você ganhou ${res.xp} pontos de energia!`;
   if (res.medalhas.length) fala += " E ganhou uma medalha nova!";
-  if (res.capas.some((c) => c.xp > 0)) fala += " Tem capa nova para o herói!";
+  if (res.capas.some((c) => c.xp > 0)) fala += P().fada ? " Tem cor nova para a fada!" : " Tem capa nova para o herói!";
+  if ((res.niveis || []).some((n) => n.xp > 0)) fala += " E você evoluiu!";
   Voz.falar(fala);
   L = null;
 }
 
 function sairLicao() {
   Voz.parar();
+  Legenda.limpar();
   L = null;
   mostrar("tela-mapa");
   renderMapa();
@@ -346,12 +415,15 @@ const R = {};
 R.desconhecido = (q, el) => { el.textContent = "?"; setTimeout(avancar, 500); };
 
 R.intro_letter = (q, el) => {
-  el.innerHTML = `<div class="letra-gigante">${q.letter}</div>
+  const pal = q.word, gr = q.letter.split(" ")[0];
+  const i = pal.indexOf(gr);
+  const palHTML = i >= 0 ? `${pal.slice(0, i)}<span class="sil lendo">${gr}</span>${pal.slice(i + gr.length)}` : `<span class="sil lendo">${pal[0]}</span>${pal.slice(1)}`;
+  el.innerHTML = `<div class="letra-gigante ${q.letter.length > 2 ? "letra-longa" : ""}">${q.letter}</div>
     <div class="figura media">${q.emoji}</div>
-    <div class="palavra-grande"><span class="sil lendo">${q.word[0]}</span>${q.word.slice(1)}</div>`;
+    <div class="palavra-grande">${palHTML}</div>`;
   registrar(q, 1);
   q._ok = true;
-  mostrarFeedback("ok", "🦸", "Nova letra!", true);
+  mostrarFeedback("ok", P().icone, q.letter.length > 1 ? "Som novo!" : "Nova letra!", true);
 };
 
 R.letter_sound = (q, el) => {
@@ -394,11 +466,12 @@ R.syllable_hear = (q, el) => {
 };
 
 R.build_word = (q, el) => {
-  el.innerHTML = `<div class="figura">${q.emoji}</div>
-    <div class="slots">${q.syllables.map(() => '<div class="slot"></div>').join("")}</div>`;
+  el.innerHTML = `<div class="figura ${q.frase ? "media" : ""}">${q.emoji}</div>
+    <div class="slots ${q.frase ? "slots-frase" : ""}">${q.syllables.map(() => '<div class="slot"></div>').join("")}</div>`;
   let pos = 0, erros = 0;
   const slots = $$(".slot", el);
   const box = opcoes(el, q.tiles, {
+    classe: q.frase ? "txt" : "",
     aoTocar: async (v, b) => {
       if (q._ok) return;
       if (v === q.syllables[pos]) {
@@ -421,15 +494,15 @@ R.build_word = (q, el) => {
           $$(".op", box).forEach((x) => x.classList.toggle("revelar", x.dataset.v === q.syllables[pos] && x.style.visibility !== "hidden"));
           if (erros === 2) repetirNoFim(q);
         }
-        await Voz.falar(`Escute: ${q.word.toLowerCase()}. Agora a sílaba ${q.syllables[pos].toLowerCase()}.`);
+        await Voz.falar(q.frase ? `A frase é: ${q.word.toLowerCase()}. Agora a palavra ${q.syllables[pos].toLowerCase()}.` : `Escute: ${q.word.toLowerCase()}. Agora a sílaba ${q.syllables[pos].toLowerCase()}.`);
       }
     },
   });
 };
 
 R.read_word = (q, el) => {
-  const sils = q.syllables;
-  el.innerHTML = `<div class="palavra-grande" id="pal-ler">${silabasHTML(sils)}</div>`;
+  const sils = q.minusculas ? q.syllables.map((s) => s.toLowerCase()) : q.syllables;
+  el.innerHTML = `<div class="palavra-grande ${q.minusculas ? "minusc" : ""}" id="pal-ler">${silabasHTML(sils)}</div>`;
   q._dica = () => lerSilabas($("#pal-ler"), sils, null);
   escolhaSimples(q, el, { classe: "emoji", falar: () => q.word.toLowerCase() });
 };
@@ -701,29 +774,155 @@ R.teen = (q, el) => {
   opcoesNumero(q, el);
 };
 
+/* ---- pergunta genérica de múltipla escolha (lições novas) ---- */
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+R.mc = (q, el) => {
+  let html = "";
+  if (q.leitura) {
+    html += `<div class="leitura-box"><h3>${q.leitura.emoji} ${esc(q.leitura.titulo)}</h3><p>${esc(q.leitura.texto)}</p>
+      <button class="btn btn-cinza btn-mini" id="ouvir-texto">🔊 Ouvir o texto</button></div>`;
+  }
+  if (q.emoji) html += `<div class="figura media">${q.emoji}</div>`;
+  if (q.texto) html += `<div class="mc-texto ${q.textoClasse || ""}">${esc(q.texto)}</div>`;
+  if (q.visual && V[q.visual.k]) html += `<div class="visual">${V[q.visual.k](q.visual)}</div>`;
+  if (q.dica) html += `<p class="dica-contar">💡 ${esc(q.dica)}</p>`;
+  el.innerHTML = html;
+  if (q.leitura) $("#ouvir-texto").onclick = () => Voz.falar(q.leitura.texto.replace(/\n/g, " "));
+  const classe = { num: "num", txt: "txt", emoji: "emoji", letra: "letra-op", cartao: "cartao" }[q.estilo || "txt"];
+  escolhaSimples(q, el, {
+    classe, rotulo: (v) => esc(v),
+    falar: (a) => q.falarResposta || (q.estilo === "num" ? String(a) : String(a).toLowerCase()),
+  });
+};
+
+/* ---- desenhos usados nas perguntas (relógio, dinheiro, frações, gráficos...) ---- */
+const V = {};
+const rep = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join("");
+
+V.quadros = ({ n }) => `<div class="dois-quadros">${quadroDez(Math.min(10, n))}${quadroDez(Math.max(0, n - 10))}</div>`;
+V.emojis = ({ e, n, apertado }) => `<div class="grade-emojis ${apertado ? "apertado" : ""}">${rep(n, () => `<span>${e}</span>`)}</div>`;
+V.emojis_linha = ({ itens }) => `<div class="padrao">${itens.map((x) => `<span>${x}</span>`).join("")}</div>`;
+V.pares = ({ e, n }) => `<div class="pares">${rep(Math.floor(n / 2), () => `<div class="par">${e}${e}</div>`)}${n % 2 ? `<div class="par sozinho">${e}</div>` : ""}</div>`;
+V.grupos = ({ e, grupos }) => `<div class="grupos">${grupos.map((n) => `<div class="grupo">${rep(n, () => `<span>${e}</span>`)}</div>`).join("")}</div>`;
+V.blocos = ({ c = 0, d = 0, u = 0 }) => `<div class="blocos">
+  ${rep(c, () => `<div class="placa-cem">${rep(100, () => "<i></i>")}</div>`)}
+  ${rep(d, () => `<div class="barra-dez">${rep(10, () => "<i></i>")}</div>`)}
+  <div class="cubos">${rep(u, () => '<span class="cubo"></span>')}</div></div>`;
+
+const COR_NOTA = { 200: "#60a5fa", 500: "#c084fc", 1000: "#f87171", 2000: "#fbbf24", 5000: "#fb923c", 10000: "#38bdf8" };
+const fmtR = (c) => `R$ ${Math.floor(c / 100)},${String(c % 100).padStart(2, "0")}`;
+function dinheiroHTML(v) {
+  if (v >= 200) return `<div class="nota" style="--cor:${COR_NOTA[v] || "#94a3b8"}"><b>R$ ${v / 100}</b><span>${v / 100}</span></div>`;
+  const real = v === 100;
+  return `<div class="moeda ${real ? "real" : v >= 25 ? "prata" : "bronze"}"><b>${real ? "1" : v}</b><small>${real ? "REAL" : "CENTAVOS"}</small></div>`;
+}
+V.dinheiro = ({ itens }) => `<div class="dinheiro">${itens.map(dinheiroHTML).join("")}</div>`;
+V.precos = ({ itens, pago }) => `<div class="precos">${itens.map(([e, p]) => `<div class="produto"><span>${e}</span><b>${fmtR(p)}</b></div>`).join("")}
+  ${pago ? `<div class="pagou">Você pagou:<div class="dinheiro">${dinheiroHTML(pago)}</div></div>` : ""}</div>`;
+
+V.relogio = ({ h, m }) => {
+  const angH = ((h % 12) + m / 60) * 30, angM = m * 6;
+  const nums = rep(12, (i) => { const n = i + 1, a = (n * 30 - 90) * Math.PI / 180; return `<text x="${100 + 72 * Math.cos(a)}" y="${100 + 72 * Math.sin(a) + 7}" text-anchor="middle">${n}</text>`; });
+  const marcas = rep(60, (i) => { const a = i * 6 * Math.PI / 180, r1 = i % 5 ? 88 : 84; return `<line x1="${100 + r1 * Math.sin(a)}" y1="${100 - r1 * Math.cos(a)}" x2="${100 + 92 * Math.sin(a)}" y2="${100 - 92 * Math.cos(a)}" class="${i % 5 ? "mn" : "mh"}"/>`; });
+  return `<svg class="relogio" viewBox="0 0 200 200"><circle cx="100" cy="100" r="96" class="aro"/>${marcas}${nums}
+    <line x1="100" y1="100" x2="100" y2="52" class="ph" transform="rotate(${angH} 100 100)"/>
+    <line x1="100" y1="100" x2="100" y2="26" class="pm" transform="rotate(${angM} 100 100)"/><circle cx="100" cy="100" r="6" class="centro"/></svg>`;
+};
+
+V.fracao = ({ forma, partes, pintadas }) => {
+  const cor = (i) => (i < pintadas ? "var(--capa)" : "#fff");
+  if (forma === "pizza") {
+    if (partes === 1) return "";
+    const fatias = rep(partes, (i) => {
+      const a0 = (i / partes) * 2 * Math.PI - Math.PI / 2, a1 = ((i + 1) / partes) * 2 * Math.PI - Math.PI / 2;
+      const p = (a) => `${100 + 80 * Math.cos(a)} ${100 + 80 * Math.sin(a)}`;
+      return `<path d="M100 100 L${p(a0)} A80 80 0 ${partes === 1 ? 1 : 0} 1 ${p(a1)} Z" fill="${cor(i)}" class="fatia"/>`;
+    });
+    return `<svg class="fracao" viewBox="0 0 200 200">${fatias}</svg>`;
+  }
+  if (forma === "quadrado" && partes === 4) {
+    return `<svg class="fracao" viewBox="0 0 200 200">${rep(4, (i) => `<rect x="${20 + (i % 2) * 80}" y="${20 + Math.floor(i / 2) * 80}" width="80" height="80" fill="${cor(i)}" class="fatia"/>`)}</svg>`;
+  }
+  const w = 260 / partes;
+  return `<svg class="fracao barra" viewBox="0 0 280 90">${rep(partes, (i) => `<rect x="${10 + i * w}" y="10" width="${w}" height="70" fill="${cor(i)}" class="fatia"/>`)}</svg>`;
+};
+
+V.grafico = ({ dados, titulo }) => {
+  const max = 10, W = 300, H = 210, base = 170, larg = 44, esp = (W - 40) / dados.length;
+  const linhas = rep(max / 2 + 1, (i) => { const v = i * 2, y = base - v * 15; return `<line x1="34" y1="${y}" x2="${W - 6}" y2="${y}" class="grade"/><text x="26" y="${y + 5}" text-anchor="end" class="eixo">${v}</text>`; });
+  const barras = dados.map(([e, v], i) => { const x = 44 + i * esp; return `<rect x="${x}" y="${base - v * 15}" width="${larg}" height="${v * 15}" rx="4" class="barra-g" style="fill:${["#3b82f6", "#f59e0b", "#22c55e", "#ec4899"][i % 4]}"/><text x="${x + larg / 2}" y="${base + 30}" text-anchor="middle" class="emoji-eixo">${e}</text>`; }).join("");
+  return `<div class="grafico-box"><b>${esc(titulo)}</b><svg class="grafico" viewBox="0 0 ${W} ${H}">${linhas}${barras}</svg></div>`;
+};
+V.tabela = ({ dados, titulo }) => `<table class="tabela"><caption>${esc(titulo)}</caption><tr><th>Fruta</th><th>Votos</th></tr>
+  ${dados.map(([e, v]) => `<tr><td>${e}</td><td>${v}</td></tr>`).join("")}</table>`;
+
+V.regua = ({ cm }) => {
+  const px = 26, x0 = 20;
+  const marcas = rep(16 * 2, (i) => { const x = x0 + (i / 2) * px; return `<line x1="${x}" y1="70" x2="${x}" y2="${i % 2 ? 80 : 88}" class="mreg"/>${i % 2 ? "" : `<text x="${x}" y="104" text-anchor="middle" class="treg">${i / 2}</text>`}`; });
+  return `<svg class="regua" viewBox="0 0 440 112"><rect x="8" y="64" width="424" height="46" rx="6" class="corpo-regua"/>${marcas}
+    <rect x="${x0}" y="30" width="${cm * px - 14}" height="22" class="lapis"/><polygon points="${x0 + cm * px - 14},30 ${x0 + cm * px},41 ${x0 + cm * px - 14},52" class="ponta"/>
+    <rect x="${x0}" y="30" width="10" height="22" class="borracha"/></svg>`;
+};
+V.balanca = ({ esq, dir }) => `<div class="balanca"><div class="prato">${esc(esq)}</div><div class="fiel">⚖️</div><div class="prato">${esc(dir)}</div></div>`;
+V.balanca_obj = () => `<div class="figura media">⚖️</div>`;
+V.conta = ({ txt, quadro, matriz }) => `<div class="conta-box">${esc(txt)}</div>${quadro ? quadroDez(quadro) : ""}
+  ${matriz ? `<div class="matriz" style="grid-template-columns:repeat(${matriz[1]},1fr)">${rep(matriz[0] * matriz[1], () => "<i></i>")}</div>` : ""}`;
+V.armada = ({ a, b, op }) => {
+  const larg = Math.max(String(a).length, String(b).length);
+  const cel = (n) => String(n).padStart(larg, " ").split("").map((c) => `<span>${c.trim()}</span>`).join("");
+  return `<div class="armada"><div class="lin"><span></span>${cel(a)}</div><div class="lin"><span>${op}</span>${cel(b)}</div><div class="lin total"><span></span>${rep(larg, () => "<span>?</span>")}</div></div>`;
+};
+V.quadro100 = ({ n, falta }) => `<div class="quadro100">${[n - 10, n, n + 10].map((l) => [l - 1, l, l + 1].map((x) => `<span class="${x === falta ? "q" : ""}">${x === falta ? "?" : x}</span>`).join("")).join("")}</div>`;
+V.fila = ({ seq }) => `<div class="fila-numeros">${seq.map((n) => (n === null ? '<span class="q">?</span>' : `<span>${n}</span>`)).join("")}</div>`;
+V.saco = ({ bolas }) => `<div class="saco"><div class="saco-bolas">${Object.entries(bolas).map(([c, n]) => rep(n, () => `<span>${c}</span>`)).join("")}</div><small>saquinho</small></div>`;
+
+const PONTOS_FORMA = { triangulo: "100,20 182,170 18,170", quadrado: "30,30 170,30 170,170 30,170", retangulo: "10,55 190,55 190,145 10,145",
+  pentagono: "100,15 185,78 152,178 48,178 15,78", hexagono: "55,22 145,22 190,100 145,178 55,178 10,100" };
+V.forma = ({ f }) => `<svg class="forma-grande" viewBox="0 0 200 200"><polygon points="${PONTOS_FORMA[f]}" class="forma-p"/>${PONTOS_FORMA[f].split(" ").map((p) => `<circle cx="${p.split(",")[0]}" cy="${p.split(",")[1]}" r="7" class="vertice"/>`).join("")}</svg>`;
+V.solido = ({ s }) => {
+  const d = {
+    esfera: `<defs><radialGradient id="ge" cx="35%" cy="35%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="var(--capa)"/></radialGradient></defs><circle cx="100" cy="100" r="70" fill="url(#ge)" class="sol"/>`,
+    cubo: `<polygon points="50,70 120,70 150,40 80,40" class="sol claro"/><polygon points="120,70 150,40 150,120 120,150" class="sol escuro"/><rect x="50" y="70" width="70" height="80" class="sol"/>`,
+    cilindro: `<rect x="55" y="50" width="90" height="100" class="sol"/><ellipse cx="100" cy="150" rx="45" ry="14" class="sol"/><ellipse cx="100" cy="50" rx="45" ry="14" class="sol claro"/>`,
+    cone: `<polygon points="100,25 150,150 50,150" class="sol"/><ellipse cx="100" cy="150" rx="50" ry="15" class="sol claro"/>`,
+  }[s];
+  return `<div class="solido-box"><svg class="solido" viewBox="0 0 200 180">${d}</svg><b>${s.toUpperCase()}</b></div>`;
+};
+V.linha = ({ itens, destaque }) => `<div class="linha-pos"><div class="lados"><span>⬅️ esquerda</span><span>direita ➡️</span></div>
+  <div class="padrao">${itens.map((x, i) => `<span class="${i === destaque ? "destaque" : ""}">${x}</span>`).join("")}</div></div>`;
+V.simetria = () => `<div class="simetria"><div><span class="sim-ex">🦋</span><i></i></div><div><span class="sim-ex">❤️</span><i></i></div></div>`;
+V.fitas = ({ fitas }) => `<div class="fitas">${fitas.map(([cor, len]) => `<div class="fita" style="background:${cor};width:${len * 8 + 10}%"></div>`).join("")}</div>`;
+V.copos = ({ niveis }) => `<div class="copos">${niveis.map((n, i) => `<div class="copo-box"><svg viewBox="0 0 80 110" class="copo"><path d="M10 6 L70 6 L62 104 L18 104 Z" class="vidro"/>
+  <clipPath id="cp${i}"><path d="M10 6 L70 6 L62 104 L18 104 Z"/></clipPath><rect x="0" y="${104 - n}" width="80" height="${n}" class="liquido" clip-path="url(#cp${i})"/></svg><b>${"ABC"[i]}</b></div>`).join("")}</div>`;
+V.lista_dias = ({ destaque }) => `<div class="dias">${["dom", "seg", "ter", "qua", "qui", "sex", "sáb"].map((d, i) => `<span class="${i === destaque ? "destaque" : ""}">${d}</span>`).join("")}</div>`;
+
 /* ------------------------------------------------------------ pausa, coleção, pais */
 function mostrarPausa() {
   mostrar("tela-pausa");
   desenharHerois();
-  Voz.falar(`Hora de descansar os olhos! O ${nomeHeroi()} foi recarregar a energia. Amanhã tem mais missão!`);
+  Voz.falar(`Hora de descansar os olhos! ${P().oNome} foi recarregar a energia. Amanhã tem mais missão!`);
 }
 
 function abrirColecao() {
   mostrar("tela-colecao");
   desenharHerois();
+  $("#colecao-titulo").textContent = P().titulo;
+  $("#colecao-sub").textContent = P().fada ? "Escolha a cor do vestido e das asas" : "Escolha a cor da capa";
+  $("#lista-niveis").innerHTML = EST.niveis.map((n) => `<div class="medalha ${EST.xp >= n.xp ? "" : "nao"}"><b>${n.icone}</b>${n.nome}<small>${n.xp ? "⚡ " + n.xp : "início"}</small></div>`).join("");
   $("#lista-capas").innerHTML = EST.capas.map((c) => {
     const tem = EST.xp >= c.xp;
-    return `<button class="capa-op ${tem ? "" : "bloq"} ${EST.config.capa === c.id ? "sel" : ""}" data-id="${c.id}" style="background:${c.cor}">
+    return `<button class="capa-op ${tem ? "" : "bloq"} ${EST.capa_atual === c.id ? "sel" : ""}" data-id="${c.id}" style="background:${c.cor}">
       ${tem ? "" : "🔒"}<small>${tem ? c.nome : "⚡" + c.xp}</small></button>`;
   }).join("");
   $$(".capa-op").forEach((b) => b.onclick = async () => {
-    if (b.classList.contains("bloq")) { Voz.falar("Junte mais pontos de energia para ganhar essa capa!"); return; }
+    if (b.classList.contains("bloq")) { Voz.falar(`Junte mais pontos de energia para ganhar essa ${P().peca_curta}!`); return; }
     Som.toque();
-    EST = await api("/api/config", { capa: b.dataset.id });
+    EST = await api("/api/config", P().fada ? { capa_fada: b.dataset.id } : { capa: b.dataset.id });
     aplicarCapa(); abrirColecao();
   });
   $("#lista-medalhas").innerHTML = EST.medalhas.map((m) => `<div class="medalha ${m.tem ? "" : "nao"}"><b>${m.icone}</b>${m.nome}</div>`).join("");
-  Voz.falar("Escolha a cor da capa do seu herói!");
+  Voz.falar(P().fada ? "Escolha a cor do vestido e das asas da sua fada!" : "Escolha a cor da capa do seu herói!");
 }
 
 let contaPais = 0;
@@ -765,20 +964,29 @@ async function preencherPais() {
       ${h.dificeis.length ? `<small>Praticar: ${h.dificeis.slice(0, 8).join(", ")}</small>` : ""}</div>`;
   }).join("") : "<p>Ainda sem dados. Faça algumas missões!</p>";
   const c = EST.config;
-  $("#cfg-nome").value = c.nome_crianca; $("#cfg-heroi").value = c.nome_heroi;
+  $("#cfg-nome").value = c.nome_crianca; $("#cfg-heroi").value = P().nome;
+  $("#cfg-personagem").value = EST.personagem || "faisca";
+  $("#cfg-som").checked = c.som !== false; $("#cfg-tudo").checked = !!c.liberar_tudo;
+  Conta.preencherCartao();
   $("#cfg-minutos").value = c.minutos_dia; $("#cfg-meta").value = c.meta_licoes;
   $("#cfg-voz").value = c.voz_velocidade; $("#cfg-senha").value = "";
 }
 async function salvarConfig() {
+  const pers = $("#cfg-personagem").value;
+  const nomeP = $("#cfg-heroi").value.trim();
+  const trocou = pers !== EST.personagem;
   const dados = {
-    nome_crianca: $("#cfg-nome").value.trim(), nome_heroi: $("#cfg-heroi").value.trim() || "Faísca",
+    nome_crianca: $("#cfg-nome").value.trim(), personagem: pers,
+    som: $("#cfg-som").checked, liberar_tudo: $("#cfg-tudo").checked,
     minutos_dia: Math.max(5, Math.min(60, Number($("#cfg-minutos").value) || 15)),
     meta_licoes: Math.max(1, Math.min(6, Number($("#cfg-meta").value) || 2)),
     voz_velocidade: Number($("#cfg-voz").value) || 0.85,
   };
+  if (!trocou && nomeP) dados[pers === "fada" ? "nome_fada" : "nome_heroi"] = nomeP;
   if ($("#cfg-senha").value) dados.senha_pais = $("#cfg-senha").value;
   EST = await api("/api/config", dados);
   aplicarCapa();
+  $("#cfg-heroi").value = P().nome;
   $("#cfg-ok").textContent = "Salvo! ✓";
   setTimeout(() => ($("#cfg-ok").textContent = ""), 2000);
 }
@@ -801,6 +1009,14 @@ function confete() {
 /* ------------------------------------------------------------ ligações */
 function ligar() {
   $("#btn-comecar").onclick = comecar;
+  $$(".escolha").forEach((b) => (b.onclick = () => escolherPersonagem(b.dataset.personagem)));
+  $$(".btn-som-toggle").forEach((b) => (b.onclick = async () => {
+    EST = await api("/api/config", { som: !somLigado() });
+    atualizarBotoesSom();
+    if (!somLigado()) Voz.parar();
+    Legenda.mostrar(somLigado() ? "Som ligado." : "Som desligado. Os textos continuam aparecendo no balão.");
+  }));
+  Conta.ligarTelas();
   $$(".aba").forEach((a) => a.onclick = () => { trilhaAtual = a.dataset.trilha; Som.toque(); renderMapa(); Voz.falar(trilhaAtual === "leitura" ? "Letras!" : "Números!"); });
   $("#btn-revisao").onclick = () => abrirLicao("revisao");
   $("#btn-sair").onclick = sairLicao;
@@ -814,7 +1030,7 @@ function ligar() {
   $("#btn-entrar-pais").onclick = entrarPais;
   $("#resp-pais").onkeydown = (e) => { if (e.key === "Enter") entrarPais(); };
   $("#btn-salvar-cfg").onclick = salvarConfig;
-  $("#btn-testar-voz").onclick = () => { EST.config.voz_velocidade = Number($("#cfg-voz").value); Voz.falar("Oi! Eu sou o seu herói. B com A faz ba. Bola!"); };
+  $("#btn-testar-voz").onclick = () => { EST.config.voz_velocidade = Number($("#cfg-voz").value); EST.config.som = true; Voz.falar("Oi! B com A faz ba. Bola!"); };
   $("#btn-liberar").onclick = async () => { EST = await api("/api/pais/liberar", {}); $("#cfg-ok").textContent = "Tempo de hoje liberado."; preencherPais(); };
   $("#btn-zerar").onclick = async () => {
     const t = prompt('Isso apaga todo o progresso. Digite ZERAR para confirmar:');
@@ -853,7 +1069,12 @@ function prepararInstalavel() {
 window.addEventListener("DOMContentLoaded", async () => {
   prepararInstalavel();
   Voz.init();
-  desenharHerois();
   ligar();
   await carregar();
+  // Com login configurado (config.js), confere a conta e o acesso antes de liberar o jogo
+  const r = await Conta.iniciar();
+  if (r === "login") return Conta.mostrarLogin();
+  if (r === "bloqueado") return Conta.mostrarBloqueio();
+  mostrar("tela-inicio");
+  Conta.textoInicio();
 });

@@ -1,78 +1,55 @@
-# ⚡ Super Faísca — Letras & Números (versão instalável)
+# ⚡ Super Faísca — Letras & Números (versão 3)
 
-App educativo para crianças de 4 a 7 anos aprenderem a ler, escrever e contar. Esta versão **roda inteira no aparelho**: não precisa de servidor, funciona **sem internet** depois de instalada, e o progresso fica salvo no próprio tablet.
+App educativo para crianças de 4 a 9 anos aprenderem a **ler, escrever e fazer contas**. Tem duas trilhas de **100 lições** cada e dois personagens originais: o **Super Faísca** e a **Fada Lumi**. Roda no próprio aparelho e funciona sem internet.
 
-## O que tem na pasta
+## Novidades da versão 3
+- **Tudo escrito na tela.** Tudo o que o personagem fala aparece num balão de fala. Há um botão 🔊/🔇 para jogar sem som (no metrô, sem fone).
+- **Menino ou menina.** Na primeira vez, a criança escolhe entre o **Super Faísca** e a **Fada Lumi**. Cada um tem 7 cores para desbloquear e 2 evoluções: ✨ brilho (300 pontos) e 👑 coroa (650 pontos). Dá para trocar de personagem na área dos pais.
+- **200 lições.** São 100 de Letras e 100 de Números, cobrindo o 1º e o 2º ano e boa parte do 3º ano.
+- **Login com 7 dias grátis e painel de administração** (opcional). Veja o arquivo **LOGIN-E-PAINEL.md**.
+- **"Liberar todas as lições"** na área dos pais, para crianças que já sabem ler ou contar.
 
+## Trilha de Letras (100 lições)
+1. Vogais · 2. M, P, B · 3. T, D, L · 4. F, V, N, S · 5. C, G, R, J · 6. Primeiras frases
+7. **Letras minúsculas** · 8. **Z, X e H** · 9. **CH, LH, NH** · 10. **R e RR** · 11. **SS, Ç, CE, CI**
+12. **GE, GI, QU, GU** · 13. **Sons pelo nariz** (AN, M antes de P/B, ÃO) · 14. **R, L e S no fim da sílaba**
+15. **Consoantes juntas** (BR, TR, PL…) · 16. **Vogais juntinhas** (AI, OU…) e palavras grandes
+17. **Brincando com sons** (rimas, contar sílabas, mesmo começo e mesmo fim)
+18. **Frases** (separar palavras, completar, ordenar, pontuação) · 19. **Pequenos textos** (bilhete, história, lista, convite, com perguntas)
+20. **Palavras e sentidos** (masculino e feminino, plural, contrários, ordem alfabética)
+
+## Trilha de Números (100 lições)
+1. Até 5 · 2. Até 10 · 3. Mais e menos · 4. Padrões e formas · 5. Juntar e tirar · 6. Histórias · 7. Até 20
+8. **Números até 20** (par e ímpar, dobro) · 9. **Contas até 20** (amigos do 10, família de contas)
+10. **Até 100** (dezenas, quadro do 100, de 2 em 2 e de 5 em 5) · 11. **Dinheiro** (moedas, notas, troco)
+12. **Medidas** (comprimento, peso, capacidade, régua) · 13. **Tempo** (semana, meses, relógio)
+14. **Formas e posição** (lados, sólidos, direita e esquerda, simetria) · 15. **Contas até 100** (com vai-um e empréstimo)
+16. **Multiplicação** (grupos, tabuadas do 2, 3, 4, 5 e 10) · 17. **Divisão** · 18. **Até 1000** · 19. **Frações**
+20. **Gráficos e chances** · 21. **Tabuadas do 6 ao 9** · 22. **Desafios** (duas etapas, balança, estimativa, contas de cabeça)
+
+## Arquivos
 ```
-super_faisca_app/
-├── index.html            telas + o herói (SVG)
-├── style.css             visual
-├── app.js                interação, voz, sons, traçado
-├── curriculo.js          TODO o conteúdo: trilhas, lições e perguntas
-├── motor.js              progresso, pontos, medalhas, revisão, relatório, backup
-├── sw.js                 guarda o app no aparelho (modo offline)
-├── manifest.webmanifest  nome, ícone e cores do app instalado
-├── icones/               ícones do app
-├── privacidade.html      política de privacidade (preencha os [colchetes])
-└── servir.py             para testar no computador antes de publicar
+index.html            telas e os dois personagens (SVG)
+style.css             visual
+app.js                interação, voz, legendas, desenhos (relógio, dinheiro, frações, gráficos...)
+curriculo.js          lições 1–6 de cada trilha
+curriculo_extra.js    lições novas (até completar 100 + 100)
+motor.js              progresso, pontos, cores, evoluções, medalhas, revisão, relatório
+conta.js              login, teste grátis e verificação de acesso
+config.js             ligar o login, preço, Pix, WhatsApp
+admin.html            painel de administração (liberar e bloquear contas)
+supabase.sql          banco de dados do login (roda uma vez no Supabase)
+sw.js, manifest       app instalável e offline
+privacidade.html      política de privacidade (preencha os [colchetes])
+servir.py             testar no computador: python servir.py
 ```
 
-## 1. Testar no computador
-
+## Testar no computador
 ```powershell
-cd super_faisca_app
 python servir.py
 ```
 
-## 2. Colocar no ar com o GitHub Pages (grátis, só pelo navegador)
-
-1. Crie uma conta em **github.com**.
-2. Clique em **+ → New repository**. Dê o nome `super-faisca`, deixe como **Public** e clique em **Create repository**.
-3. Na página do repositório, clique em **uploading an existing file**.
-4. Arraste **todo o conteúdo** da pasta `super_faisca_app`, incluindo a pasta `icones`, e clique em **Commit changes**.
-5. Vá em **Settings → Pages**. Em *Build and deployment*, escolha **Deploy from a branch**, depois a branch **main**, a pasta **/ (root)**, e clique em **Save**.
-6. Em 1 ou 2 minutos, o endereço aparece no topo dessa página, algo como `https://SEU-USUARIO.github.io/super-faisca/`.
-
-Nenhum dado da criança vai para o GitHub. Lá ficam só os arquivos do app.
-
-## 3. Instalar no tablet Android
-
-1. Abra o endereço no **Chrome** do tablet, com internet.
-2. No menu **⋮**, toque em **Instalar app** ou **Adicionar à tela inicial**.
-3. O ícone do Super Faísca aparece junto com os outros apps. A partir daí, ele abre em tela cheia e funciona sem internet.
-4. **Voz sem internet:** vá em *Configurações → Sistema (ou Acessibilidade) → Saída de texto para fala → Serviços de fala do Google → Instalar dados de voz → Português (Brasil)*.
-
-**No iPad ou iPhone:** abra no **Safari**, toque em **Compartilhar → Adicionar à Tela de Início**.
-
-## 4. Publicar uma versão nova
-
-1. Altere os arquivos que quiser.
-2. Em `sw.js`, aumente o número da versão: `super-faisca-v1` passa a ser `super-faisca-v2`.
-3. Envie os arquivos de novo para o GitHub (*Add file → Upload files*).
-4. O tablet baixa a versão nova sozinho. Ela aparece na segunda vez que o app for aberto com internet.
-
-O progresso não se perde nas atualizações.
-
-## 5. Backup do progresso
-
-Na área dos pais, use **💾 Fazer backup** antes de trocar de tablet ou de limpar o navegador. Para recuperar, use **📂 Restaurar backup** no aparelho novo.
-
-## 6. Mais tarde: Play Store
-
-Com o app já publicado no GitHub Pages:
-1. Abra **pwabuilder.com**, cole o endereço e gere o pacote **Android**. Ele cria o arquivo `.aab` e um arquivo `assetlinks.json`.
-2. Envie o `assetlinks.json` para uma pasta `.well-known` no seu site, seguindo as instruções do PWABuilder.
-3. Crie a conta no Google Play Console (US$ 25), faça o teste fechado (12 testadores por 14 dias) e publique.
-4. Use o `privacidade.html` (com os seus dados preenchidos) como política de privacidade.
-
-**Atenção:** no GitHub Pages, o `assetlinks.json` precisa ficar na raiz do domínio. Para isso, o repositório deve se chamar `SEU-USUARIO.github.io`, ou você usa um domínio próprio. Resolvemos isso quando chegar a hora.
-
-## Como mexer no conteúdo
-
-Tudo está em `curriculo.js`:
-- **Palavras novas:** acrescente em `PALAVRAS`, no formato `["PALAVRA", ["SÍ", "LA", "BAS"], "emoji"]`. A palavra entra sozinha nas lições assim que todas as letras dela tiverem sido ensinadas.
-- **Frases:** use `FRASES`.
-- **Unidades de letras:** use `UNIDADES_LEITURA`.
-
-Depois de mudar, aumente a versão em `sw.js` (veja o passo 4).
+## Publicar uma versão nova no GitHub
+1. No repositório, clique em **Add file → Upload files**, arraste **todos** os arquivos e clique em **Commit changes**.
+2. O tablet pega a versão nova na segunda vez que o app for aberto com internet. O progresso não se perde.
+3. Sempre que mudar algum arquivo, aumente o número em `sw.js` (`super-faisca-v3` → `v4`).
