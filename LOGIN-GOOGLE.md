@@ -39,7 +39,9 @@ Pode rodar sem medo: o script não apaga contas nem liberações. Ele só acresc
 4. No menu da esquerda, abra **Branding** (Identidade visual). Preencha:
    - **Página inicial do app:** `https://vhcarvalhoo.github.io/super-faisca/`
    - **Política de privacidade:** `https://vhcarvalhoo.github.io/super-faisca/privacidade.html`
-   - **Domínios autorizados:** adicione `efisjfchjzofasyajnst.supabase.co`
+   - **Domínios autorizados:** adicione os dois, um em cada linha (use **+ Adicionar domínio** para a segunda):
+     - `efisjfchjzofasyajnst.supabase.co`
+     - `vhcarvalhoo.github.io` (sem ele, aparece "Domínio ausente" e o botão Salvar não funciona)
    - ⚠️ **Não envie logotipo.** Com logotipo, o Google exige uma verificação que demora semanas.
    - Clique em **Salvar**.
 5. Abra **Público** (Audience) e clique em **Publicar app** → **Confirmar**. O status deve mudar para **Em produção**.
