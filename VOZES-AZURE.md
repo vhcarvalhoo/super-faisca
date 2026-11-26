@@ -45,12 +45,12 @@ Na primeira vez, ele pede a chave:
 1. Cole a **CHAVE 1** com **Ctrl+V** ou com o botão direito do mouse. **A chave não aparece na tela enquanto você cola**, e isso é normal.
 2. Aperte **Enter**.
 
-Ele guarda a chave em `C:\Users\<você>\SuperFaisca-vozes\chave.txt`, fora do projeto, e não pergunta mais.
+Depois ele pergunta a **região**. É o campo **Local/Região** da mesma página do portal (ex.: `eastus` ou `brazilsouth`). Digite e aperte **Enter**.
+
+Ele guarda a chave e a região em `C:\Users\<você>\SuperFaisca-vozes\`, fora do projeto, e não pergunta mais.
 
 - Se aparecer **"Pasta vozes/ pronta: 5 frases"**, funcionou!
-- Se aparecer **"O Azure recusou a chave"**, ele apaga a chave errada. Rode de novo e cole a chave certa.
-
-> Se a região do seu recurso **não** for `eastus`, crie também o arquivo `regiao.txt` na pasta `SuperFaisca-vozes`, com a região escrita (ex.: `brazilsouth`).
+- Se aparecer **"O Azure recusou a chave"**, ele apaga a chave e a região guardadas. Confira as duas no portal, rode de novo e digite as certas.
 
 ## Passo 5 — Ouvir o teste
 Rode `python servir.py`, abra o app e toque numa missão: as frases gravadas já saem com a voz da Francisca.

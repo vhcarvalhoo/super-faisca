@@ -56,6 +56,10 @@ def ler_config():
             sys.exit(1)
         chave_arq.write_text(chave + "\n", encoding="utf-8")
         print(f"  Chave guardada em {chave_arq} (fora do projeto, não vai para o GitHub).\n")
+        print("  Agora a região. No portal do Azure, na mesma página da chave, veja o campo \"Local/Região\"")
+        print("  (por exemplo: eastus, brazilsouth, westeurope). Digite e aperte Enter.")
+        regiao = input(f"  Região (só Enter = {REGIAO_PADRAO}): ").strip().lower().replace(" ", "")
+        (TRABALHO / "regiao.txt").write_text((regiao or REGIAO_PADRAO) + "\n", encoding="utf-8")
     chave = chave_arq.read_text(encoding="utf-8").strip()
     regiao_arq = TRABALHO / "regiao.txt"
     regiao = regiao_arq.read_text(encoding="utf-8").strip() if regiao_arq.exists() else REGIAO_PADRAO
@@ -124,9 +128,14 @@ def gravar(falas, so_teste):
                     break
                 except urllib.error.HTTPError as e:
                     if e.code in (401, 403):
-                        (TRABALHO / "chave.txt").unlink(missing_ok=True)  # na próxima vez ele pede a chave de novo
-                        print(f"\n  O Azure recusou a chave (erro {e.code}). Apaguei a chave guardada: rode de novo e cole a CHAVE 1."
-                              f"\n  Se a região do recurso não for {regiao}, crie {TRABALHO / 'regiao.txt'} com a região certa.")
+                        # na próxima vez ele pede a chave e a região de novo
+                        (TRABALHO / "chave.txt").unlink(missing_ok=True)
+                        (TRABALHO / "regiao.txt").unlink(missing_ok=True)
+                        print(f"\n  O Azure recusou a chave na região \"{regiao}\" (erro {e.code}).")
+                        print("  Confira no portal, na página \"Chaves e Ponto de Extremidade\" do recurso de Fala:")
+                        print("   - a CHAVE 1 (use o botão de copiar ao lado dela);")
+                        print("   - o campo \"Local/Região\".")
+                        print("  Depois rode de novo: ele vai pedir a chave e a região.")
                         return feitas
                     if e.code == 429:
                         print("  Muitos pedidos seguidos; esperando 60 segundos...")
@@ -156,7 +165,6 @@ def montar(falas):
     """Junta as gravações em pacotes de até 3 MB e escreve vozes/indice.json.
     Pacotes já publicados são mantidos (o aparelho não precisa baixar de novo);
     as frases novas entram em pacotes novos."""
-    SAIDA.mkdir(exist_ok=True)
     antigo = {}
     try:
         antigo = json.loads((SAIDA / "indice.json").read_text(encoding="utf-8"))
@@ -197,6 +205,7 @@ def montar(falas):
         if not membros:
             return
         nome = f"pacote-{hashlib.sha1(atual).hexdigest()[:10]}.mp3"
+        SAIDA.mkdir(exist_ok=True)
         (SAIDA / nome).write_bytes(atual)
         p = len(indice["pacotes"])
         indice["pacotes"].append(nome)
@@ -217,6 +226,9 @@ def montar(falas):
         atual += dados
     fechar()
 
+    if not indice["falas"]:
+        print("\n  Ainda não há nenhuma frase gravada; a pasta vozes/ não foi criada.")
+        return
     (SAIDA / "indice.json").write_text(json.dumps(indice, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     usados = set(indice["pacotes"])
     for arq in SAIDA.glob("pacote-*.mp3"):
