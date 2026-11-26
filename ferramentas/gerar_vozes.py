@@ -38,7 +38,8 @@ REGIAO_PADRAO = "eastus"
 FORMATO = "audio-16khz-32kbitrate-mono-mp3"  # leve e bom para fala (~4 KB por segundo)
 VELOCIDADE = "-8%"          # um pouco mais devagar que o normal, para criança pequena
 VELOCIDADE_LENTA = "-35%"   # sílabas faladas devagar
-LIMITE_MES = 450_000        # o plano grátis (F0) dá 500 mil caracteres por mês; deixamos uma folga
+SILENCIO_FIM = "250ms"      # pausa no fim de cada frase (antes da próxima)
+LIMITE_MES = 450_000       # o plano grátis (F0) dá 500 mil caracteres por mês; deixamos uma folga
 PAUSA = 3.2                 # segundos entre pedidos: o plano grátis aceita 20 por minuto
 TAMANHO_PACOTE = 3 * 1024 * 1024
 
@@ -98,7 +99,9 @@ def salvar_uso(uso):
 
 def ssml(texto, lento):
     vel = VELOCIDADE_LENTA if lento else VELOCIDADE
-    return (f"<speak version='1.0' xml:lang='pt-BR'><voice name='{VOZ}'>"
+    # silêncio curto antes e depois: o app junta várias frases seguidas
+    return (f"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='https://www.w3.org/2001/mstts' xml:lang='pt-BR'>"
+            f"<voice name='{VOZ}'><mstts:silence type='Leading-exact' value='40ms'/><mstts:silence type='Tailing-exact' value='{SILENCIO_FIM}'/>"
             f"<prosody rate='{vel}'>{escape(texto)}</prosody></voice></speak>").encode("utf-8")
 
 
