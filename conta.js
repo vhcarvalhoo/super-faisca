@@ -322,7 +322,10 @@ const Conta = (() => {
     if (!c) return;
     c.classList.toggle("escondido", !ativo() || !sessao);
     if (!ativo() || !sessao) return;
-    $("#pais-conta").innerHTML = `${esc(sessao.email)}<br><small>${esc(descricao())}</small>`;
+    const nome = acesso?.nome || "";
+    const cel = acesso?.celular ? formatarCelular(acesso.celular) : "";
+    $("#pais-conta").innerHTML = `<div class="pp-conta-dados">${nome ? `<b>${esc(nome)}</b><br>` : ""}<span>${esc(sessao.email)}${cel ? ` · ${esc(cel)}` : ""}</span></div>`
+      + (descricao() ? `<div class="pp-acesso">✅ ${esc(descricao())}</div>` : "");
   }
 
   function ligarTelas() {

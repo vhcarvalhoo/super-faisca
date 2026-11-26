@@ -1053,53 +1053,184 @@ function abrirColecao() {
   Voz.falar(`Escolha a roupa ${P().doQuem}!`);
 }
 
-let contaPais = 0;
+/* ------------------------------------------------------------ área dos pais
+   Entrada com uma conta para adultos (teclado próprio, sem abrir o teclado do tablet) e 3 abas:
+   Progresso, Ajustes (salvam sozinhos) e Conta. Nada daqui é falado, só o exemplo do "Ouvir". */
+let contaPais = 0, respPais = "";
+const LEITURA_GRUPOS = new Set(["letra", "silaba", "escrita", "palavra", "leitura", "frase", "grafia", "minuscula", "orto", "fono", "texto", "gram"]);
+const ICONE_GRUPO = {
+  letra: "🔤", silaba: "🧩", escrita: "✏️", palavra: "✍️", leitura: "📖", frase: "💬", grafia: "🔠", minuscula: "🔡", orto: "📝",
+  fono: "🎵", texto: "📚", gram: "🗂️", contar: "🖐️", ver: "👀", numeral: "🔢", comparar: "⚖️", sequencia: "🔁", dez: "🔟",
+  somar: "➕", tirar: "➖", compor: "🧱", historia: "🧸", padrao: "🔷", forma: "🔺", dezena: "🔟", num20: "🔢", conta: "➕",
+  num100: "💯", dinheiro: "💰", medida: "📏", tempo: "🕒", geo: "📐", conta100: "➕", mult: "✖️", tabuada: "✖️", div: "➗",
+  num1000: "🔢", fracao: "🍕", dados: "📊", chance: "🎲", desafio: "🏆",
+};
+let relPais = null, filtroHab = "";
+
+function avisoPais(txt) {
+  const a = $("#cfg-ok");
+  a.textContent = txt; a.classList.add("on");
+  clearTimeout(avisoPais.t); avisoPais.t = setTimeout(() => a.classList.remove("on"), 2200);
+}
+
 function abrirPais() {
   Voz.parar();
   mostrar("tela-pais");
+  $("#pp-perfil").classList.add("escondido");
   $("#pais-portao").classList.remove("escondido");
   $("#pais-conteudo").classList.add("escondido");
   const a = 12 + Math.floor(Math.random() * 18), b = 11 + Math.floor(Math.random() * 9);
   contaPais = a + b;
   $("#conta-pais").textContent = `${a} + ${b} = ?`;
-  $("#resp-pais").value = ""; $("#senha-pais").value = ""; $("#pais-erro").textContent = "";
+  respPais = ""; desenharVisor();
+  $("#senha-pais").value = ""; $("#pais-erro").textContent = "";
   $("#senha-pais").classList.toggle("escondido", !EST.tem_senha);
 }
+function desenharVisor() {
+  $$("#pp-visor span").forEach((s, i) => { s.textContent = respPais[i] || ""; s.classList.toggle("at", i === respPais.length); });
+}
+function teclaPais(t) {
+  if ($("#pais-portao").classList.contains("escondido")) return;
+  if (t === "apagar") respPais = respPais.slice(0, -1);
+  else if (t === "ok") return entrarPais();
+  else if (/^\d$/.test(t) && respPais.length < 2) respPais += t;
+  $("#pais-erro").textContent = "";
+  desenharVisor();
+  // a resposta tem sempre 2 algarismos: sem senha, confere sozinho
+  if (respPais.length === 2 && !EST.tem_senha) entrarPais();
+}
 async function entrarPais() {
-  if (Number($("#resp-pais").value) !== contaPais) { $("#pais-erro").textContent = "Resposta incorreta."; return; }
+  if (Number(respPais) !== contaPais) {
+    $("#pais-erro").textContent = respPais ? "Resposta incorreta. Tente de novo." : "Digite a resposta.";
+    const v = $("#pp-visor"); v.classList.remove("errou"); void v.offsetWidth; v.classList.add("errou");
+    respPais = ""; setTimeout(desenharVisor, 300);
+    return;
+  }
   const r = await api("/api/pais/entrar", { senha: $("#senha-pais").value });
   if (!r.ok) { $("#pais-erro").textContent = "Senha incorreta."; return; }
   $("#pais-portao").classList.add("escondido");
   $("#pais-conteudo").classList.remove("escondido");
+  trocarAbaPais("progresso");
   await preencherPais();
 }
-async function preencherPais() {
-  const rel = await api("/api/relatorio");
-  const minHoje = Math.round(EST.hoje.segundos / 60);
-  $("#pais-resumo").innerHTML = `<div>⚡ ${rel.xp} pontos</div><div>🔥 ${rel.sequencia} ${rel.sequencia === 1 ? "dia seguido" : "dias seguidos"}</div>
-    <div>📘 ${rel.total_licoes} lições feitas</div><div>⏱️ ${minHoje} de ${EST.config.minutos_dia} min hoje</div>`;
-  const maxMin = Math.max(5, ...rel.semana.map((d) => d.segundos / 60));
-  const dias = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-  $("#pais-semana").innerHTML = rel.semana.map((d) => {
-    const dt = new Date(d.dia + "T12:00:00");
-    return `<div><span>${Math.round(d.segundos / 60)}m</span><i style="height:${(d.segundos / 60 / maxMin) * 70}px"></i>${dias[dt.getDay()]}</div>`;
-  }).join("");
-  $("#pais-habilidades").innerHTML = rel.habilidades.length ? rel.habilidades.map((h) => {
-    const p = Math.round((h.acertos / Math.max(1, h.tentativas)) * 100);
-    const cor = p >= 80 ? "var(--verde)" : p >= 60 ? "#f59e0b" : "var(--vermelho)";
-    return `<div class="hab"><div class="hab-top"><span>${h.grupo}</span><span>${p}% <small style="color:var(--suave)">(${h.tentativas})</small></span></div>
-      <div class="hab-barra"><i style="width:${p}%;background:${cor}"></i></div>
-      ${h.dificeis.length ? `<small>Praticar: ${h.dificeis.slice(0, 8).join(", ")}</small>` : ""}</div>`;
-  }).join("") : "<p>Ainda sem dados. Faça algumas missões!</p>";
+function trocarAbaPais(aba) {
+  $$(".pp-aba").forEach((b) => b.classList.toggle("on", b.dataset.aba === aba));
+  $$(".pp-painel").forEach((p) => p.classList.toggle("escondido", p.dataset.painel !== aba));
+  $("#pp-perfil").classList.toggle("escondido", aba !== "progresso");
+  $("#tela-pais").scrollTop = 0;
+}
+
+function anel(valor, total, cor, fundo, rotulo, texto) {
+  const c = 2 * Math.PI * 38, f = Math.max(0, Math.min(1, valor / Math.max(1, total)));
+  return `<div class="pp-anel"><div><svg width="92" height="92" viewBox="0 0 92 92" aria-hidden="true">
+    <circle cx="46" cy="46" r="38" fill="none" stroke="${fundo}" stroke-width="10"/>
+    ${f > 0 ? `<circle cx="46" cy="46" r="38" fill="none" stroke="${cor}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - f)).toFixed(1)}" transform="rotate(-90 46 46)"/>` : ""}
+    </svg><b>${valor}<small>${texto}</small></b></div>${rotulo}</div>`;
+}
+
+function topoPais() {
   const c = EST.config;
+  const img = $("#pp-rosto img");
+  img.src = `personagens/${EST.roupa?.img || (P().fada ? "fada-basica" : "faisca-basico")}.webp`;
+  $("#pp-rosto").className = `pp-rosto ${P().fada ? "fada" : "faisca"}`;
+  $("#pp-nome").textContent = c.nome_crianca || "Sua criança";
+  $("#pp-sub").textContent = `${P().nome} · Nível ${EST.nivel} · ${EST.licoes_feitas} ${EST.licoes_feitas === 1 ? "missão" : "missões"}`;
+  const px = EST.proximo;
+  const tipo = { roupa: "a roupa", poder: "o poder", efeito: "o efeito" };
+  $("#pp-prox-txt").innerHTML = px
+    ? `🎁 ${px.faltam === 1 ? "Falta" : "Faltam"} <b>${px.faltam} ${px.faltam === 1 ? "missão" : "missões"}</b> para ${tipo[px.tipo] || ""} <b>${esc(px.nome)} ${px.icone}</b>`
+    : "🎉 Ganhou todos os prêmios que existem por enquanto!";
+  $("#pp-prox-barra").style.width = `${px ? Math.max(4, ((10 - Math.min(10, px.faltam)) / 10) * 100) : 100}%`;
+}
+
+function dicaPais(rel) {
+  const nome = EST.config.nome_crianca || "A criança";
+  const dificil = rel.habilidades.find((h) => h.dificeis.length && h.tentativas >= 5);
+  if (dificil && LEITURA_GRUPOS.has(dificil.chave)) {
+    const ds = dificil.dificeis.slice(0, 3).map((d) => `<b>${esc(d)}</b>`);
+    const itens = ds.length > 1 ? `${ds.slice(0, -1).join(", ")} e ${ds[ds.length - 1]}` : ds[0];
+    return `${esc(nome)} ainda erra ${itens} em “${esc(dificil.grupo)}”. Procurem juntos em rótulos, placas e livros, e falem o som em voz alta.`;
+  }
+  if (dificil) return `${esc(nome)} está aprendendo <b>${esc(dificil.grupo)}</b>. Brinquem com coisas de verdade: contar colheres, juntar e tirar brinquedos, dividir biscoitos.`;
+  const dicas = [
+    "Leiam juntos hoje, nem que seja uma página. Aponte as palavras com o dedo enquanto lê.",
+    "Procurem as letras que a criança já conhece em rótulos, placas e embalagens.",
+    "Elogie o esforço, não a “inteligência”: “Você tentou de novo e conseguiu!”.",
+    "Peça para a criança contar coisas do dia a dia: degraus, frutas, carros de uma cor.",
+    "Pouco e todo dia vale mais: 10 a 15 minutos bastam.",
+  ];
+  const dia = Math.floor(Date.now() / 86400000);
+  return dicas[dia % dicas.length];
+}
+
+function desenharHabilidades() {
+  const lista = (relPais?.habilidades || []).filter((h) => !filtroHab || (filtroHab === "leitura") === LEITURA_GRUPOS.has(h.chave));
+  $$("#pp-filtro button").forEach((b) => b.classList.toggle("on", b.dataset.area === filtroHab));
+  $("#pais-habilidades").innerHTML = lista.length ? lista.map((h) => {
+    const p = Math.round((h.acertos / Math.max(1, h.tentativas)) * 100);
+    const [cls, txt, cor] = h.tentativas < 5 ? ["novo", "Começando", "#f1f5f9"]
+      : p >= 80 ? ["ok", "Já sabe ✓", "#dcfce7"] : p >= 60 ? ["ap", "Aprendendo", "#fef3c7"] : ["pr", "Praticar", "#fee2e2"];
+    const icone = ICONE_GRUPO[h.chave] || (LEITURA_GRUPOS.has(h.chave) ? "📖" : "🔢");
+    return `<div class="pp-hab"><span style="background:${cor}">${icone}</span><div><strong>${esc(h.grupo)}</strong>
+      <small>${p}% · ${h.tentativas} ${h.tentativas === 1 ? "pergunta" : "perguntas"}</small>
+      ${h.dificeis.length ? `<div class="pp-letras">${h.dificeis.slice(0, 8).map((d) => `<span>${esc(d)}</span>`).join("")}</div>` : ""}</div>
+      <span class="pp-chip ${cls}">${txt}</span></div>`;
+  }).join("") : `<p class="pp-vazio">${relPais?.habilidades.length ? "Nada nesta área ainda." : "Ainda sem dados. Faça algumas missões!"}</p>`;
+}
+
+async function preencherPais() {
+  const rel = (relPais = await api("/api/relatorio"));
+  const c = EST.config;
+  topoPais();
+  // Hoje
+  const minHoje = Math.round(EST.hoje.segundos / 60);
+  $("#pp-data").textContent = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "short" });
+  $("#pp-hoje").innerHTML = anel(minHoje, c.minutos_dia, "#3b82f6", "#e0f2fe", "Tempo de tela", `de ${c.minutos_dia} min`)
+    + anel(EST.hoje.licoes || 0, c.meta_licoes, "#22c55e", "#dcfce7", "Missões de hoje", `de ${c.meta_licoes}`);
+  $("#pais-resumo").innerHTML = `<div class="pp-num"><span>🔥</span><b>${rel.sequencia}</b><small>${rel.sequencia === 1 ? "dia seguido" : "dias seguidos"}</small></div>
+    <div class="pp-num"><span>⭐</span><b>${rel.xp.toLocaleString("pt-BR")}</b><small>pontos</small></div>
+    <div class="pp-num"><span>📘</span><b>${rel.total_licoes}</b><small>lições jogadas</small></div>`;
+  // Semana, com a linha do limite de tempo
+  const mins = rel.semana.map((d) => Math.round(d.segundos / 60));
+  const escala = Math.max(5, c.minutos_dia * 1.25, ...mins), alto = 90;
+  const dias = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  $("#pp-media").textContent = `média ${Math.round(mins.reduce((s, m) => s + m, 0) / 7)} min · limite ${c.minutos_dia} min`;
+  $("#pais-semana").innerHTML = `<div class="pp-meta" style="bottom:${18 + (c.minutos_dia / escala) * alto}px"></div>`
+    + rel.semana.map((d, i) => {
+      const hoje = i === rel.semana.length - 1;
+      return `<div class="pp-dia${hoje ? " hoje" : ""}"><em>${mins[i]}</em><i style="height:${(mins[i] / escala) * alto}px"></i>${hoje ? "hoje" : dias[new Date(d.dia + "T12:00:00").getDay()]}</div>`;
+    }).join("");
+  // Caminho: lições diferentes feitas em cada trilha
+  const conta = (k) => { const ls = (EST.trilhas[k] || []).flatMap((u) => u.lessons); return [ls.filter((l) => l.done).length, ls.length]; };
+  $("#pp-caminho").innerHTML = [["leitura", "📖 Leitura", "var(--azul)"], ["matematica", "🔢 Matemática", "var(--roxo)"]].map(([k, nome, cor]) => {
+    const [f, t] = conta(k);
+    return `<div class="pp-trilha"><div><span>${nome}</span><small>${f} de ${t} lições</small></div><p><i style="width:${(f / Math.max(1, t)) * 100}%;background:${cor}"></i></p></div>`;
+  }).join("");
+  desenharHabilidades();
+  $("#pp-dica").innerHTML = dicaPais(rel);
+  // Ajustes
   $("#cfg-nome").value = c.nome_crianca; $("#cfg-heroi").value = P().nome;
+  $("#pp-rot-heroi").textContent = P().fada ? "Nome da fada" : "Nome do herói";
   $("#cfg-personagem").value = EST.personagem || "faisca";
+  $$(".pp-op").forEach((b) => b.classList.toggle("on", b.dataset.p === (EST.personagem || "faisca")));
   $("#cfg-som").checked = c.som !== false; $("#cfg-tudo").checked = !!c.liberar_tudo;
   delete $("#cfg-voz-nome").dataset.mudou;
   preencherVozes();
-  Conta.preencherCartao();
   $("#cfg-minutos").value = c.minutos_dia; $("#cfg-meta").value = c.meta_licoes;
+  $$(".pp-step").forEach(desenharStep);
+  $("#pp-tempo-hoje").textContent = `Hoje: ${minHoje} de ${c.minutos_dia} min`;
   $("#cfg-voz").value = c.voz_velocidade; $("#cfg-senha").value = "";
+  $("#cfg-senha").placeholder = EST.tem_senha ? "Trocar" : "Nenhuma";
+  $("#pp-senha-info").textContent = EST.tem_senha ? "Pedida para entrar aqui" : "Opcional";
+  // Conta
+  Conta.preencherCartao();
+  $("#area-sair-conta").classList.toggle("escondido", $("#cartao-conta").classList.contains("escondido"));
+}
+function desenharStep(s) {
+  const v = Number($("#" + s.dataset.alvo).value);
+  s.querySelector("b").textContent = v + s.dataset.un;
+  s.querySelector('[data-d="-1"]').disabled = v <= Number(s.dataset.min);
+  s.querySelector('[data-d="1"]').disabled = v >= Number(s.dataset.max);
 }
 function preencherVozes() {
   const sel = $("#cfg-voz-nome");
@@ -1113,6 +1244,7 @@ function preencherVozes() {
   sel.value = gravada && Voz.usarGravada() ? VOZ_GRAVADA : Voz.voz?.name || "";
 }
 
+/** Salva os ajustes (chamado sozinho a cada mudança). */
 async function salvarConfig() {
   const pers = $("#cfg-personagem").value;
   const nomeP = $("#cfg-heroi").value.trim();
@@ -1127,12 +1259,79 @@ async function salvarConfig() {
   // a voz só muda se os pais mexeram na lista (se a lista abriu antes da Francisca carregar, não troca sozinha)
   if ($("#cfg-voz-nome").dataset.mudou) dados.voz_nome = $("#cfg-voz-nome").value;
   if (!trocou && nomeP) dados[pers === "fada" ? "nome_fada" : "nome_heroi"] = nomeP;
-  if ($("#cfg-senha").value) dados.senha_pais = $("#cfg-senha").value;
+  const senhaNova = $("#cfg-senha").value;
+  if (senhaNova) dados.senha_pais = senhaNova;
   EST = await api("/api/config", dados);
   aplicarCapa();
-  $("#cfg-heroi").value = P().nome;
-  $("#cfg-ok").textContent = "Salvo! ✓";
-  setTimeout(() => ($("#cfg-ok").textContent = ""), 2000);
+  if (trocou || !nomeP) $("#cfg-heroi").value = P().nome;
+  $("#pp-rot-heroi").textContent = P().fada ? "Nome da fada" : "Nome do herói";
+  if (senhaNova) {
+    $("#cfg-senha").value = ""; $("#cfg-senha").placeholder = "Trocar";
+    $("#pp-senha-info").textContent = "Pedida para entrar aqui";
+  }
+  topoPais();
+  $("#pp-tempo-hoje").textContent = `Hoje: ${Math.round(EST.hoje.segundos / 60)} de ${EST.config.minutos_dia} min`;
+  avisoPais(senhaNova ? "Senha salva ✓" : "Salvo ✓");
+}
+
+function ligarPais() {
+  $$("#pp-teclado button").forEach((b) => (b.onclick = () => teclaPais(b.dataset.tecla || b.textContent)));
+  document.addEventListener("keydown", (e) => {
+    if (!$("#tela-pais").classList.contains("ativa") || e.target.tagName === "INPUT") {
+      if (e.target.id === "senha-pais" && e.key === "Enter") entrarPais();
+      return;
+    }
+    if (/^\d$/.test(e.key)) teclaPais(e.key);
+    else if (e.key === "Backspace") teclaPais("apagar");
+    else if (e.key === "Enter") teclaPais("ok");
+  });
+  $$(".pp-aba").forEach((b) => (b.onclick = () => trocarAbaPais(b.dataset.aba)));
+  $$("#pp-filtro button").forEach((b) => (b.onclick = () => { filtroHab = b.dataset.area; desenharHabilidades(); }));
+  // ajustes: tudo salva sozinho
+  ["#cfg-nome", "#cfg-heroi", "#cfg-senha", "#cfg-som", "#cfg-tudo", "#cfg-voz"].forEach((s) => ($(s).onchange = salvarConfig));
+  ["#cfg-nome", "#cfg-heroi", "#cfg-senha"].forEach((s) => ($(s).onkeydown = (e) => { if (e.key === "Enter") e.target.blur(); }));
+  $$(".pp-op").forEach((b) => (b.onclick = () => {
+    if ($("#cfg-personagem").value === b.dataset.p) return;
+    $("#cfg-personagem").value = b.dataset.p;
+    $$(".pp-op").forEach((o) => o.classList.toggle("on", o === b));
+    salvarConfig();
+  }));
+  $$(".pp-step").forEach((s) => s.querySelectorAll("button").forEach((b) => (b.onclick = () => {
+    const alvo = $("#" + s.dataset.alvo);
+    const v = Math.max(Number(s.dataset.min), Math.min(Number(s.dataset.max), Number(alvo.value) + Number(b.dataset.d) * Number(s.dataset.passo)));
+    if (v === Number(alvo.value)) return;
+    alvo.value = v; desenharStep(s);
+    clearTimeout(s.t); s.t = setTimeout(salvarConfig, 400); // espera parar de tocar no + e −
+  })));
+  $("#btn-testar-voz").onclick = () => {
+    EST.config.voz_velocidade = Number($("#cfg-voz").value); EST.config.som = true; EST.config.voz_nome = $("#cfg-voz-nome").value;
+    Voz.escolher(); Voz.falar("Oi! Vamos ler juntos? B com A faz ba. Bola! Três mais dois é igual a cinco.");
+  };
+  $("#cfg-voz-nome").onchange = () => { $("#cfg-voz-nome").dataset.mudou = "1"; $("#btn-testar-voz").click(); salvarConfig(); };
+  $("#btn-liberar").onclick = async () => { EST = await api("/api/pais/liberar", {}); await preencherPais(); avisoPais("Tempo de hoje liberado ✓"); };
+  $("#btn-zerar").onclick = async () => {
+    const t = prompt("Isso apaga todo o progresso deste aparelho. Digite ZERAR para confirmar:");
+    if (t === "ZERAR") { EST = await api("/api/pais/zerar", { confirmar: "ZERAR" }); await preencherPais(); avisoPais("Progresso zerado."); }
+  };
+  $("#btn-backup").onclick = () => {
+    const blob = new Blob([Motor.exportar()], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `super-faisca-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    avisoPais("Backup salvo na pasta de downloads ✓");
+  };
+  $("#btn-restaurar").onclick = () => $("#arquivo-backup").click();
+  $("#arquivo-backup").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      Motor.importar(await f.text());
+      await carregar(); await preencherPais();
+      avisoPais("Progresso restaurado ✓");
+    } catch (err) { avisoPais("Não consegui ler esse arquivo de backup."); }
+    e.target.value = "";
+  };
 }
 
 /* ------------------------------------------------------------ confete */
@@ -1171,38 +1370,7 @@ function ligar() {
   $("#btn-pais").onclick = abrirPais;
   $("#btn-pausa-pais").onclick = abrirPais;
   $$("[data-voltar]").forEach((b) => b.onclick = () => { if (tempoEsgotado()) return mostrarPausa(); mostrar("tela-mapa"); renderMapa(); });
-  $("#btn-entrar-pais").onclick = entrarPais;
-  $("#resp-pais").onkeydown = (e) => { if (e.key === "Enter") entrarPais(); };
-  $("#btn-salvar-cfg").onclick = salvarConfig;
-  $("#btn-testar-voz").onclick = () => {
-    EST.config.voz_velocidade = Number($("#cfg-voz").value); EST.config.som = true; EST.config.voz_nome = $("#cfg-voz-nome").value;
-    Voz.escolher(); Voz.falar("Oi! Vamos ler juntos? B com A faz ba. Bola! Três mais dois é igual a cinco.");
-  };
-  $("#cfg-voz-nome").onchange = () => { $("#cfg-voz-nome").dataset.mudou = "1"; $("#btn-testar-voz").click(); };
-  $("#btn-liberar").onclick = async () => { EST = await api("/api/pais/liberar", {}); $("#cfg-ok").textContent = "Tempo de hoje liberado."; preencherPais(); };
-  $("#btn-zerar").onclick = async () => {
-    const t = prompt('Isso apaga todo o progresso. Digite ZERAR para confirmar:');
-    if (t === "ZERAR") { EST = await api("/api/pais/zerar", { confirmar: "ZERAR" }); $("#cfg-ok").textContent = "Progresso zerado."; preencherPais(); }
-  };
-  $("#btn-backup").onclick = () => {
-    const blob = new Blob([Motor.exportar()], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `super-faisca-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    $("#cfg-ok").textContent = "Backup salvo na pasta de downloads.";
-  };
-  $("#btn-restaurar").onclick = () => $("#arquivo-backup").click();
-  $("#arquivo-backup").onchange = async (e) => {
-    const f = e.target.files[0]; if (!f) return;
-    try {
-      Motor.importar(await f.text());
-      await carregar(); preencherPais();
-      $("#cfg-ok").textContent = "Progresso restaurado! ✓";
-    } catch (err) { $("#cfg-ok").textContent = "Não consegui ler esse arquivo de backup."; }
-    e.target.value = "";
-  };
+  ligarPais();
 }
 
 /* ------------------------------------------------------------ app instalável */

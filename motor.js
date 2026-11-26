@@ -251,7 +251,7 @@ const Motor = (() => {
     const grupos = {};
     for (const [sk, h] of Object.entries(est.habilidades)) {
       const g = sk.split(":")[0];
-      const gg = (grupos[g] = grupos[g] || { grupo: ROTULOS[g] || g, tentativas: 0, acertos: 0, dificeis: [] });
+      const gg = (grupos[g] = grupos[g] || { grupo: ROTULOS[g] || g, chave: g, tentativas: 0, acertos: 0, dificeis: [] });
       gg.tentativas += h.tentativas;
       gg.acertos += h.acertos;
       if (h.tentativas >= 2 && h.acertos / h.tentativas < 0.6) gg.dificeis.push(sk.includes(":") ? sk.split(":").slice(1).join(":") : sk);

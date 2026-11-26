@@ -182,78 +182,156 @@
     </div>
   </section>
 
-  <!-- ÁREA DOS PAIS -->
-  <section id="tela-pais" class="tela">
-    <header class="licao-topo"><button class="btn-x" data-voltar>✕</button><h2>Área dos pais</h2><span></span></header>
-    <div id="pais-portao" class="pais-portao">
-      <p>Para entrar, resolva:</p>
-      <p class="conta-pais" id="conta-pais"></p>
-      <input id="resp-pais" type="number" inputmode="numeric" placeholder="resposta">
-      <input id="senha-pais" type="password" placeholder="senha (se houver)" class="escondido">
-      <button id="btn-entrar-pais" class="btn btn-azul">Entrar</button>
+  <!-- ÁREA DOS PAIS: entrada (conta para adultos) e 3 abas: Progresso, Ajustes e Conta. Os ajustes salvam sozinhos. -->
+  <section id="tela-pais" class="tela tela-pais">
+    <header class="pp-topo">
+      <div class="pp-barra"><button class="pp-x" data-voltar aria-label="Fechar">✕</button><span>Área dos pais</span><span class="pp-esp"></span></div>
+      <div id="pp-perfil" class="escondido">
+        <div class="pp-perfil">
+          <div class="pp-rosto" id="pp-rosto"><img alt=""></div>
+          <div><h2 id="pp-nome"></h2><p id="pp-sub"></p></div>
+        </div>
+        <div class="pp-prox"><span id="pp-prox-txt"></span><div class="pp-barrinha"><i id="pp-prox-barra"></i></div></div>
+      </div>
+    </header>
+
+    <div id="pais-portao" class="pp-portao">
+      <div class="pp-cadeado">🔒</div>
+      <h2>Só para adultos</h2>
+      <p>Resolva a conta para entrar</p>
+      <p class="pp-conta" id="conta-pais"></p>
+      <div class="pp-visor" id="pp-visor"><span></span><span></span></div>
+      <input id="senha-pais" type="password" placeholder="Senha da área dos pais" class="pp-senha escondido" autocomplete="off">
+      <div class="pp-teclado" id="pp-teclado">
+        <button>1</button><button>2</button><button>3</button><button>4</button><button>5</button><button>6</button>
+        <button>7</button><button>8</button><button>9</button><button class="pp-fx" data-tecla="apagar" aria-label="Apagar">⌫</button><button>0</button><button class="pp-fx pp-ok" data-tecla="ok" aria-label="Entrar">✓</button>
+      </div>
       <p id="pais-erro" class="erro"></p>
     </div>
-    <div id="pais-conteudo" class="pais-conteudo escondido">
-      <div class="cartao escondido" id="cartao-conta">
-        <h3>Conta</h3>
-        <p id="pais-conta"></p>
-        <div class="linha-btns"><button id="btn-sair-conta" class="btn btn-cinza">Sair da conta</button></div>
-      </div>
-      <div class="cartao">
-        <h3>Resumo</h3>
-        <div id="pais-resumo" class="pais-resumo"></div>
-        <div id="pais-semana" class="semana"></div>
-      </div>
-      <div class="cartao">
-        <h3>Habilidades <small>(acerto na 1ª tentativa)</small></h3>
-        <div id="pais-habilidades"></div>
-      </div>
-      <div class="cartao">
-        <h3>Configurações</h3>
-        <label>Nome da criança <input id="cfg-nome" maxlength="20"></label>
-        <label>Personagem
-          <select id="cfg-personagem">
-            <option value="faisca">Menino — Super Faísca</option>
-            <option value="fada">Menina — Fada Lumi</option>
-          </select>
-        </label>
-        <label>Nome do personagem <input id="cfg-heroi" maxlength="20"></label>
-        <label>Minutos de tela por dia <input id="cfg-minutos" type="number" min="5" max="60"></label>
-        <label>Missões por dia (meta) <input id="cfg-meta" type="number" min="1" max="6"></label>
-        <label>Voz <select id="cfg-voz-nome"></select>
-          <small class="dica-voz">✨ = voz mais natural. Ao escolher, ela fala um exemplo.</small></label>
-        <label>Velocidade da voz <input id="cfg-voz" type="range" min="0.6" max="1.1" step="0.05"></label>
-        <label class="aceite"><input type="checkbox" id="cfg-som"> Som ligado (os textos aparecem sempre na tela)</label>
-        <label class="aceite"><input type="checkbox" id="cfg-tudo"> Liberar todas as lições (para crianças que já sabem ler ou contar)</label>
-        <label>Senha da área dos pais (opcional) <input id="cfg-senha" type="password" maxlength="12"></label>
-        <div class="linha-btns">
-          <button id="btn-salvar-cfg" class="btn btn-azul">Salvar</button>
-          <button id="btn-testar-voz" class="btn btn-cinza">🔊 Testar voz</button>
+
+    <div id="pais-conteudo" class="pp-conteudo escondido">
+      <nav class="pp-abas">
+        <button class="pp-aba on" data-aba="progresso">📊 Progresso</button>
+        <button class="pp-aba" data-aba="ajustes">⚙️ Ajustes</button>
+        <button class="pp-aba" data-aba="conta">👤 Conta</button>
+      </nav>
+
+      <!-- Aba Progresso -->
+      <div class="pp-painel" data-painel="progresso">
+        <div class="pp-card">
+          <h3>Hoje <small id="pp-data"></small></h3>
+          <div class="pp-aneis" id="pp-hoje"></div>
         </div>
-        <div class="linha-btns">
-          <button id="btn-liberar" class="btn btn-cinza">Liberar mais tempo hoje</button>
-          <button id="btn-zerar" class="btn btn-vermelho">Zerar progresso</button>
+        <div class="pp-nums" id="pais-resumo"></div>
+        <div class="pp-card">
+          <h3>Últimos 7 dias <small id="pp-media"></small></h3>
+          <div class="pp-graf" id="pais-semana"></div>
         </div>
-        <div class="linha-btns">
-          <button id="btn-backup" class="btn btn-cinza">💾 Fazer backup</button>
-          <button id="btn-restaurar" class="btn btn-cinza">📂 Restaurar backup</button>
+        <div class="pp-card">
+          <h3>Caminho até agora</h3>
+          <div id="pp-caminho"></div>
+        </div>
+        <div class="pp-card">
+          <h3>Habilidades <small>acerto de primeira</small></h3>
+          <div class="pp-filtro" id="pp-filtro">
+            <button class="on" data-area="">Todas</button><button data-area="leitura">📖 Leitura</button><button data-area="matematica">🔢 Matemática</button>
+          </div>
+          <div id="pais-habilidades"></div>
+        </div>
+        <div class="pp-card pp-dica">
+          <h3>💡 Ideia para hoje</h3>
+          <p id="pp-dica"></p>
+        </div>
+      </div>
+
+      <!-- Aba Ajustes -->
+      <div class="pp-painel escondido" data-painel="ajustes">
+        <p class="pp-grupo">Criança</p>
+        <div class="pp-lista">
+          <label class="pp-item"><span class="pp-ic" style="background:#e0f2fe">🧒</span><span class="pp-tx">Nome da criança</span>
+            <input id="cfg-nome" class="pp-campo" maxlength="20" placeholder="Escreva aqui"></label>
+          <div class="pp-escolha" id="pp-escolha">
+            <button class="pp-op" data-p="faisca"><span class="pp-rosto faisca"><img src="personagens/faisca-basico.webp" alt=""></span>Super Faísca</button>
+            <button class="pp-op fada" data-p="fada"><span class="pp-rosto fada"><img src="personagens/fada-basica.webp" alt=""></span>Fada Lumi</button>
+          </div>
+          <input type="hidden" id="cfg-personagem">
+          <label class="pp-item"><span class="pp-ic" style="background:#fef3c7">🦸</span><span class="pp-tx" id="pp-rot-heroi">Nome do herói</span>
+            <input id="cfg-heroi" class="pp-campo" maxlength="20"></label>
+        </div>
+
+        <p class="pp-grupo">Tempo e metas</p>
+        <div class="pp-lista">
+          <div class="pp-item"><span class="pp-ic" style="background:#dbeafe">⏱️</span><span class="pp-tx">Tempo por dia<small>Recomendado: 15 min</small></span>
+            <div class="pp-step" data-alvo="cfg-minutos" data-passo="5" data-min="5" data-max="60" data-un=" min"><button data-d="-1" aria-label="Menos">−</button><b></b><button data-d="1" aria-label="Mais">+</button></div>
+            <input type="hidden" id="cfg-minutos"></div>
+          <div class="pp-item"><span class="pp-ic" style="background:#dcfce7">🎯</span><span class="pp-tx">Missões por dia<small>Meta diária</small></span>
+            <div class="pp-step" data-alvo="cfg-meta" data-passo="1" data-min="1" data-max="6" data-un=""><button data-d="-1" aria-label="Menos">−</button><b></b><button data-d="1" aria-label="Mais">+</button></div>
+            <input type="hidden" id="cfg-meta"></div>
+          <button class="pp-item pp-link" id="btn-liberar"><span class="pp-ic" style="background:#f1f5f9">➕</span><span class="pp-tx">Liberar mais tempo só hoje<small id="pp-tempo-hoje"></small></span><span class="pp-chev">›</span></button>
+        </div>
+
+        <p class="pp-grupo">Voz e som</p>
+        <div class="pp-lista">
+          <div class="pp-item pp-coluna"><div class="pp-linha"><span class="pp-ic" style="background:#fce7f3">🗣️</span><span class="pp-tx">Voz</span>
+              <button id="btn-testar-voz" class="pp-ouvir">🔊 Ouvir</button></div>
+            <select id="cfg-voz-nome" class="pp-select"></select>
+            <small class="pp-nota">⭐ = voz gravada · ✨ = voz mais natural. Ao escolher, ela fala um exemplo.</small></div>
+          <div class="pp-item pp-coluna"><div class="pp-linha"><span class="pp-ic" style="background:#ede9fe">🐢</span><span class="pp-tx">Velocidade da voz</span></div>
+            <input id="cfg-voz" class="pp-range" type="range" min="0.6" max="1.1" step="0.05">
+            <div class="pp-ext"><span>🐢 Mais devagar</span><span>Mais rápida 🐇</span></div></div>
+          <label class="pp-item"><span class="pp-ic" style="background:#dcfce7">🔊</span><span class="pp-tx">Som ligado<small>Os textos aparecem sempre na tela</small></span>
+            <span class="pp-tog"><input type="checkbox" id="cfg-som"><i></i></span></label>
+        </div>
+
+        <p class="pp-grupo">Lições e segurança</p>
+        <div class="pp-lista">
+          <label class="pp-item"><span class="pp-ic" style="background:#fef3c7">🔓</span><span class="pp-tx">Liberar todas as lições<small>Para quem já sabe ler ou contar</small></span>
+            <span class="pp-tog"><input type="checkbox" id="cfg-tudo"><i></i></span></label>
+          <label class="pp-item"><span class="pp-ic" style="background:#f1f5f9">🔑</span><span class="pp-tx">Senha dos pais<small id="pp-senha-info">Opcional</small></span>
+            <input id="cfg-senha" class="pp-campo" type="password" maxlength="12" autocomplete="new-password"></label>
+        </div>
+        <p class="pp-salvo">✓ Tudo é salvo sozinho</p>
+      </div>
+
+      <!-- Aba Conta -->
+      <div class="pp-painel escondido" data-painel="conta">
+        <div class="escondido" id="cartao-conta">
+          <div class="pp-card">
+            <h3>Sua conta</h3>
+            <div id="pais-conta"></div>
+          </div>
+        </div>
+        <p class="pp-grupo">Progresso deste aparelho</p>
+        <div class="pp-lista">
+          <button class="pp-item" id="btn-backup"><span class="pp-ic" style="background:#dbeafe">💾</span><span class="pp-tx">Fazer backup<small>Salva um arquivo com o progresso</small></span><span class="pp-chev">›</span></button>
+          <button class="pp-item" id="btn-restaurar"><span class="pp-ic" style="background:#dbeafe">📂</span><span class="pp-tx">Restaurar backup<small>Para trocar de aparelho</small></span><span class="pp-chev">›</span></button>
           <input id="arquivo-backup" type="file" accept="application/json,.json" class="escondido">
         </div>
-        <p id="cfg-ok" class="ok"></p>
-      </div>
-      <div class="cartao dicas">
-        <h3>Como acompanhar</h3>
-        <ul>
-          <li><b>Sente junto</b> nas primeiras missões. Repita os sons em voz alta com a criança.</li>
-          <li><b>Pouco e todo dia</b> vale mais que muito de vez em quando: 10–15 minutos bastam.</li>
-          <li><b>Leve para o mundo:</b> procure as letras da semana em rótulos, placas e livros.</li>
-          <li><b>Erro faz parte.</b> O app nunca pune; elogie o esforço, não a "inteligência".</li>
-          <li><b>Leia junto todos os dias</b> — nenhum app substitui isso.</li>
-          <li><b>Sem som?</b> Tudo o que o personagem fala aparece escrito no balão. Dá para jogar no metrô, sem fone.</li>
-          <li><b>Privacidade:</b> o progresso da criança fica só neste aparelho. Use "Fazer backup" antes de trocar de aparelho.</li>
-        </ul>
+        <p class="pp-grupo">Como acompanhar</p>
+        <div class="pp-lista">
+          <details class="pp-dicas">
+            <summary class="pp-item"><span class="pp-ic" style="background:#fef3c7">💡</span><span class="pp-tx">Dicas para os pais<small>Sente junto, pouco e todo dia, leia junto…</small></span><span class="pp-chev">›</span></summary>
+            <ul>
+              <li><b>Sente junto</b> nas primeiras missões. Repita os sons em voz alta com a criança.</li>
+              <li><b>Pouco e todo dia</b> vale mais que muito de vez em quando: 10–15 minutos bastam.</li>
+              <li><b>Leve para o mundo:</b> procure as letras da semana em rótulos, placas e livros.</li>
+              <li><b>Erro faz parte.</b> O app nunca pune; elogie o esforço, não a "inteligência".</li>
+              <li><b>Leia junto todos os dias</b> — nenhum app substitui isso.</li>
+              <li><b>Sem som?</b> Tudo o que o personagem fala aparece escrito no balão. Dá para jogar no metrô, sem fone.</li>
+              <li><b>Privacidade:</b> o progresso da criança fica só neste aparelho. Use "Fazer backup" antes de trocar de aparelho.</li>
+            </ul>
+          </details>
+          <a class="pp-item" href="privacidade.html" target="_blank" rel="noopener"><span class="pp-ic" style="background:#f1f5f9">🔒</span><span class="pp-tx">Política de privacidade</span><span class="pp-chev">›</span></a>
+        </div>
+        <div class="pp-lista escondido" id="area-sair-conta">
+          <button class="pp-item" id="btn-sair-conta"><span class="pp-ic" style="background:#f1f5f9">🚪</span><span class="pp-tx">Sair da conta</span><span class="pp-chev">›</span></button>
+        </div>
+        <div class="pp-lista pp-perigo">
+          <button class="pp-item" id="btn-zerar"><span class="pp-ic" style="background:#fee2e2">🗑️</span><span class="pp-tx">Zerar progresso<small>Apaga as missões deste aparelho</small></span><span class="pp-chev">›</span></button>
+        </div>
       </div>
     </div>
+    <p id="cfg-ok" class="pp-aviso" role="status"></p>
   </section>
 
   <!-- Legenda fora das lições: tudo o que é falado aparece escrito -->
