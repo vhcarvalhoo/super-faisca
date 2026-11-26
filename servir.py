@@ -10,6 +10,7 @@ funciona abrindo o index.html direto do disco.
 """
 import argparse
 import functools
+import json
 import socket
 import sys
 import threading
@@ -29,6 +30,25 @@ class Handler(SimpleHTTPRequestHandler):
 
     def log_message(self, *a):
         pass
+
+    def do_POST(self):
+        """Só para a página ferramentas/extrair_falas.html salvar o falas.json (e só no próprio computador)."""
+        if self.path != "/ferramentas/falas.json" or self.client_address[0] not in ("127.0.0.1", "::1"):
+            self.send_error(403)
+            return
+        tamanho = int(self.headers.get("Content-Length", 0))
+        if tamanho > 50 * 1024 * 1024:
+            self.send_error(413)
+            return
+        dados = self.rfile.read(tamanho)
+        try:
+            json.loads(dados)
+        except ValueError:
+            self.send_error(400)
+            return
+        (PASTA / "ferramentas" / "falas.json").write_bytes(dados)
+        self.send_response(204)
+        self.end_headers()
 
 
 def ip_local():

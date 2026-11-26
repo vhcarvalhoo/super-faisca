@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extrair falas — Super Faísca</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; color: #1e293b; }
+  button { font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: 0; background: #2563eb; color: #fff; cursor: pointer; }
+  pre { background: #f1f5f9; padding: 12px; border-radius: 10px; white-space: pre-wrap; }
+  .ok { color: #15803d; font-weight: 700; } .erro { color: #b91c1c; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>Extrair falas para gravar</h1>
+<p>Esta página gera todas as missões várias vezes e junta tudo o que o app fala, das frases mais importantes para as menos.
+Abra pelo <b>python servir.py</b> (endereço <code>http://localhost:8765/ferramentas/extrair_falas.html</code>) e clique no botão.
+O resultado vai para <code>ferramentas/falas.json</code>, que o <code>gerar_vozes.py</code> usa.</p>
+<label>Vezes que cada missão é gerada: <input id="vezes" type="number" value="60" min="5" max="500"></label>
+<p><button id="btn">Extrair e salvar</button></p>
+<p id="msg"></p>
+<pre id="resumo"></pre>
+
+<script src="../curriculo.js"></script>
+<script src="../curriculo_extra.js"></script>
+<script src="../vozes.js"></script>
+<script src="falas.js"></script>
+<script>
+"use strict";
+function extrair(vezes) {
+  const conta = new Map(); // chave -> { texto, lento, peso }
+  const somar = (texto, lento, peso) => {
+    for (const p of Vozes.partes(texto)) {
+      const k = Vozes.chave(p, lento);
+      const item = conta.get(k) || { chave: k, texto: p, lento, peso: 0 };
+      item.peso += peso;
+      conta.set(k, item);
+    }
+  };
+  // falas fixas: sempre primeiro
+  for (const [t, lento] of falasFixas()) somar(t, lento, 1000);
+  // perguntas: missões do começo valem mais (a criança passa mais tempo nelas)
+  const trilhas = Curriculo.construirTrilhas();
+  let erros = 0;
+  for (const unidades of Object.values(trilhas)) {
+    let ordem = 0;
+    for (const u of unidades) for (const l of u.lessons) {
+      const pesoLicao = 1 / (1 + ordem / 15);
+      ordem++;
+      for (let i = 0; i < vezes; i++) {
+        let qs;
+        try { qs = Curriculo.gerarLicao(l.gen); } catch (e) { erros++; continue; }
+        for (const q of qs) for (const [t, lento] of falasDaQuestao(q)) somar(t, lento, pesoLicao / vezes);
+      }
+    }
+  }
+  const falas = [...conta.values()].sort((a, b) => b.peso - a.peso)
+    .map((x) => ({ ...x, peso: Math.round(x.peso * 1000) / 1000 }));
+  const caracteres = falas.reduce((s, x) => s + x.texto.length, 0);
+  return { gerado: new Date().toISOString(), vezes, erros, total_falas: falas.length, total_caracteres: caracteres, falas };
+}
+
+document.getElementById("btn").onclick = async () => {
+  const msg = document.getElementById("msg");
+  msg.className = ""; msg.textContent = "Gerando... (pode levar alguns segundos)";
+  await new Promise((r) => setTimeout(r, 50));
+  const r = extrair(Math.max(5, Number(document.getElementById("vezes").value) || 60));
+  const cortes = [500, 2000, 5000, 10000].map((n) => `${n} primeiras frases: ${r.falas.slice(0, n).reduce((s, x) => s + x.texto.length, 0).toLocaleString("pt-BR")} caracteres`);
+  document.getElementById("resumo").textContent =
+    `Frases diferentes: ${r.total_falas.toLocaleString("pt-BR")}\nCaracteres no total: ${r.total_caracteres.toLocaleString("pt-BR")}\n${cortes.join("\n")}\n` +
+    `Erros ao gerar missões: ${r.erros}\n\nPrimeiras 30:\n` + r.falas.slice(0, 30).map((x) => `${x.lento ? "[devagar] " : ""}${x.texto}`).join("\n");
+  const json = JSON.stringify(r);
+  try {
+    const resp = await fetch("/ferramentas/falas.json", { method: "POST", headers: { "Content-Type": "application/json" }, body: json });
+    if (!resp.ok) throw new Error(resp.status);
+    msg.className = "ok"; msg.textContent = "Pronto! Salvo em ferramentas/falas.json.";
+  } catch (e) {
+    // sem o servir.py: baixa o arquivo para salvar à mão na pasta ferramentas
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    a.download = "falas.json"; a.click();
+    msg.className = "erro"; msg.textContent = "Não consegui salvar direto. Baixei o falas.json: coloque-o na pasta ferramentas.";
+  }
+};
+</script>
+</body>
+</html>

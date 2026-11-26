@@ -31,15 +31,30 @@ const Voz = {
     const preferida = EST?.config?.voz_nome;
     this.voz = vs.find((v) => v.name === preferida) || vs[0] || null;
   },
+  /** Voz gravada (Azure): usada quando existe, a não ser que os pais escolham uma voz do aparelho. */
+  usarGravada() { const n = EST?.config?.voz_nome || ""; return n === "" || n === VOZ_GRAVADA; },
   init() {
+    Vozes.preparar().then(() => { if ($("#cfg-voz-nome")) preencherVozes(); });
     if (!("speechSynthesis" in window)) return;
     this.escolher();
     speechSynthesis.onvoiceschanged = () => { this.escolher(); if ($("#cfg-voz-nome")) preencherVozes(); };
   },
-  falar(txt, { rate } = {}) {
+  async falar(txt, { rate } = {}) {
+    if (!txt) return;
+    Legenda.mostrar(txt);
+    // 1) gravação do Azure, se esta fala foi gravada e o áudio já está no aparelho
+    const lento = !!rate && rate < 0.8;
+    if (somLigado() && this.usarGravada() && Vozes.pronta(txt, lento)) {
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
+      const btn = $("#btn-ouvir");
+      btn?.classList.add("falando");
+      const ok = await Vozes.tocar(txt, lento);
+      btn?.classList.remove("falando");
+      if (ok) { Legenda.terminou(txt); return; }
+    }
+    // 2) voz do aparelho
+    Vozes.parar();
     return new Promise((res) => {
-      if (!txt) return res();
-      Legenda.mostrar(txt);
       const fimLegenda = () => { Legenda.terminou(txt); res(); };
       // sem som (ou aparelho sem voz): só o texto, com tempo para ler
       if (!somLigado() || !("speechSynthesis" in window)) { setTimeout(fimLegenda, 700 + txt.length * 45); return; }
@@ -58,8 +73,9 @@ const Voz = {
       setTimeout(() => speechSynthesis.speak(u), 60);
     });
   },
-  parar() { if ("speechSynthesis" in window) speechSynthesis.cancel(); },
+  parar() { Vozes.parar(); if ("speechSynthesis" in window) speechSynthesis.cancel(); },
 };
+const VOZ_GRAVADA = "__gravada__";
 
 /* ------------------------------------------------------------ legendas */
 const Legenda = {
@@ -1081,10 +1097,11 @@ async function preencherPais() {
 function preencherVozes() {
   const sel = $("#cfg-voz-nome");
   const vs = Voz.lista();
-  sel.innerHTML = vs.length
+  const gravada = Vozes.disponivel() ? `<option value="${VOZ_GRAVADA}">⭐ Francisca (voz gravada, a mais natural)</option>` : "";
+  sel.innerHTML = gravada + (vs.length
     ? vs.map((v) => `<option value="${esc(v.name)}">${Voz.ehNatural(v) ? "✨ " : ""}${esc(v.name)}${v.localService === false ? " (precisa de internet)" : ""}</option>`).join("")
-    : '<option value="">Nenhuma voz em português neste aparelho</option>';
-  sel.value = Voz.voz?.name || "";
+    : (gravada ? "" : '<option value="">Nenhuma voz em português neste aparelho</option>'));
+  sel.value = gravada && Voz.usarGravada() ? VOZ_GRAVADA : Voz.voz?.name || "";
 }
 
 async function salvarConfig() {

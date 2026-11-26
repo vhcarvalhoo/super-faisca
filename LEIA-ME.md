@@ -4,9 +4,10 @@ App educativo para crianças de 4 a 9 anos aprenderem a **ler, escrever e fazer 
 
 ## Novidades da versão 3
 - **Tudo escrito na tela.** Tudo o que o personagem fala aparece num balão de fala. Há um botão 🔊/🔇 para jogar sem som (no metrô, sem fone).
-- **Menino ou menina.** Na primeira vez, a criança escolhe entre o **Super Faísca** e a **Fada Lumi**. Cada um tem 7 cores para desbloquear e 2 evoluções: ✨ brilho (300 pontos) e 👑 coroa (650 pontos). Dá para trocar de personagem na área dos pais.
+- **Menino ou menina.** Na primeira vez, a criança escolhe entre o **Super Faísca** e a **Fada Lumi**. Os dois são personagens 3D com 3 roupas (0, 30 e 60 missões) e um poder ou efeito novo a cada 10 missões. Dá para trocar de personagem na área dos pais.
 - **200 lições.** São 100 de Letras e 100 de Números, cobrindo o 1º e o 2º ano e boa parte do 3º ano.
 - **Login com 7 dias grátis e painel de administração** (opcional). Veja o arquivo **LOGIN-E-PAINEL.md**.
+- **Vozes gravadas (opcional).** Falas com a voz Francisca, do Azure. Veja o arquivo **VOZES-AZURE.md**.
 - **"Liberar todas as lições"** na área dos pais, para crianças que já sabem ler ou contar.
 
 ## Trilha de Letras (100 lições)
@@ -29,12 +30,14 @@ App educativo para crianças de 4 a 9 anos aprenderem a **ler, escrever e fazer 
 
 ## Arquivos
 ```
-index.html            telas e os dois personagens (SVG)
+index.html            telas
 style.css             visual
-app.js                interação, voz, legendas, desenhos (relógio, dinheiro, frações, gráficos...)
+app.js                interação, personagens, poderes, voz, legendas, desenhos (relógio, dinheiro, frações...)
+vozes.js              toca as falas gravadas no Azure (pasta vozes/), se existirem
+personagens/          imagens dos personagens (uma por roupa)
 curriculo.js          lições 1–6 de cada trilha
 curriculo_extra.js    lições novas (até completar 100 + 100)
-motor.js              progresso, pontos, cores, evoluções, medalhas, revisão, relatório
+motor.js              progresso, pontos, roupas, poderes, medalhas, revisão, relatório
 conta.js              login, teste grátis e verificação de acesso
 config.js             ligar o login, preço, Pix, WhatsApp
 admin.html            painel de administração (liberar e bloquear contas)
@@ -42,6 +45,7 @@ supabase.sql          banco de dados do login (roda uma vez no Supabase)
 sw.js, manifest       app instalável e offline
 privacidade.html      política de privacidade (preencha os [colchetes])
 servir.py             testar no computador: python servir.py
+ferramentas/          gerar_vozes.py (grava as vozes) e extrair_falas.html (lista as frases)
 ```
 
 ## Testar no computador
