@@ -9,7 +9,7 @@ window.SUPER_FAISCA_CONFIG = {
   // Texto da tela que aparece quando o teste grátis acaba (pode mudar à vontade)
   preco: "R$ 9,90 por ano",
   pixChave: "39304898803",          // ex.: "seu-email@exemplo.com" ou CPF/CNPJ/telefone
-  whatsapp: "11948797739",          // só números com DDI e DDD, ex.: "5511999998888"
+  whatsapp: "5511948797739",         // só números com DDI e DDD, ex.: "5511999998888"
   mensagemPagamento: "Para continuar usando, faça o pagamento pelo Pix e mande o comprovante pelo WhatsApp com o e-mail da sua conta. Liberamos em até 24 horas.",
 
   // Na versão da Play Store, o Google não permite indicar pagamento fora da loja dentro do app.
