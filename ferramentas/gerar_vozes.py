@@ -183,7 +183,9 @@ def _gravar(falas, so_teste):
             else:
                 print("  Não deu certo depois de 5 tentativas. Rode de novo mais tarde.")
                 break
-            arquivo_de(f["chave"]).write_bytes(audio)
+            temp = arquivo_de(f["chave"]).with_suffix(".tmp")
+            temp.write_bytes(audio)
+            temp.replace(arquivo_de(f["chave"]))  # só aparece quando está completo
             uso[mes] = uso.get(mes, 0) + custo
             salvar_uso(uso)
             feitas += 1
@@ -224,7 +226,9 @@ def montar(falas):
     def bytes_de(ch):
         arq = arquivo_de(ch)
         if arq.exists():
-            return arq.read_bytes()
+            dados = arq.read_bytes()
+            # MP3 do Azure começa com 0xFF; arquivo vazio ou pela metade fica de fora
+            return dados if len(dados) > 400 and dados[0] == 0xFF else None
         if ch in antigo.get("falas", {}):  # gravada em outro computador: tira do pacote antigo
             p, ini, tam = antigo["falas"][ch]
             arq_p = SAIDA / antigo["pacotes"][p]
