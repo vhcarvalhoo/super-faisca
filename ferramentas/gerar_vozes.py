@@ -15,6 +15,7 @@ Só usa a biblioteca padrão do Python (não precisa instalar nada).
 """
 import argparse
 import datetime
+import getpass
 import hashlib
 import json
 import sys
@@ -43,10 +44,18 @@ TAMANHO_PACOTE = 3 * 1024 * 1024
 
 def ler_config():
     chave_arq = TRABALHO / "chave.txt"
-    if not chave_arq.exists():
+    if not chave_arq.exists() or not chave_arq.read_text(encoding="utf-8").strip():
+        # pede a chave no terminal (não aparece na tela) e guarda FORA do projeto
         TRABALHO.mkdir(parents=True, exist_ok=True)
-        print(f"\n  Falta a chave do Azure.\n  Crie o arquivo:  {chave_arq}\n  e cole nele a CHAVE 1 do seu recurso de Fala (veja o VOZES-AZURE.md).\n")
-        sys.exit(1)
+        print("\n  Ainda não tenho a chave do Azure.")
+        print("  Cole a CHAVE 1 do seu recurso de Fala (clique com o botão direito ou Ctrl+V) e aperte Enter.")
+        print("  Por segurança, a chave não aparece enquanto você cola.\n")
+        chave = getpass.getpass("  Chave: ").strip()
+        if len(chave) < 20:
+            print("\n  Essa chave parece incompleta. Copie de novo a CHAVE 1 no portal do Azure e rode outra vez.")
+            sys.exit(1)
+        chave_arq.write_text(chave + "\n", encoding="utf-8")
+        print(f"  Chave guardada em {chave_arq} (fora do projeto, não vai para o GitHub).\n")
     chave = chave_arq.read_text(encoding="utf-8").strip()
     regiao_arq = TRABALHO / "regiao.txt"
     regiao = regiao_arq.read_text(encoding="utf-8").strip() if regiao_arq.exists() else REGIAO_PADRAO
@@ -115,8 +124,9 @@ def gravar(falas, so_teste):
                     break
                 except urllib.error.HTTPError as e:
                     if e.code in (401, 403):
-                        print(f"\n  O Azure recusou a chave (erro {e.code}). Confira a chave em {TRABALHO / 'chave.txt'}"
-                              f" e a região em {TRABALHO / 'regiao.txt'} (hoje: {regiao}).")
+                        (TRABALHO / "chave.txt").unlink(missing_ok=True)  # na próxima vez ele pede a chave de novo
+                        print(f"\n  O Azure recusou a chave (erro {e.code}). Apaguei a chave guardada: rode de novo e cole a CHAVE 1."
+                              f"\n  Se a região do recurso não for {regiao}, crie {TRABALHO / 'regiao.txt'} com a região certa.")
                         return feitas
                     if e.code == 429:
                         print("  Muitos pedidos seguidos; esperando 60 segundos...")

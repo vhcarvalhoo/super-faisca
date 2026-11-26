@@ -32,27 +32,28 @@ Como funciona no app:
 2. Clique no botão de copiar ao lado de **CHAVE 1**.
 3. Repare no campo **Local/Região**: tem que estar `eastus`.
 
-## Passo 4 — Guardar a chave no seu computador (fora do GitHub)
-A chave é como uma senha: **não coloque no projeto nem mande por mensagem**. Ela fica numa pasta só sua.
+## Passo 4 — Testar com 5 frases (e guardar a chave)
+A chave é como uma senha: **não coloque no projeto nem mande por mensagem**.
 
-No terminal do VS Code, rode este comando. Ele cria a pasta e abre o Bloco de Notas:
-
-```powershell
-New-Item -ItemType Directory -Force "$HOME\SuperFaisca-vozes"; notepad "$HOME\SuperFaisca-vozes\chave.txt"
-```
-
-O Bloco de Notas pergunta se quer criar o arquivo: clique em **Sim**. Cole a chave (só ela, numa linha), salve com **Ctrl+S** e feche.
-
-> Se a região do seu recurso **não** for `eastus`, crie também o arquivo `regiao.txt` na mesma pasta, com a região escrita (ex.: `brazilsouth`).
-
-## Passo 5 — Testar com 5 frases
-No terminal do VS Code, dentro da pasta do projeto:
+No terminal do VS Code, dentro da pasta do projeto (no computador onde está o Python):
 
 ```powershell
 python ferramentas/gerar_vozes.py --teste
 ```
 
-Se aparecer **"Pasta vozes/ pronta: 5 frases"**, a chave funcionou. Se aparecer **"O Azure recusou a chave"**, confira a chave e a região.
+Na primeira vez, ele pede a chave:
+1. Cole a **CHAVE 1** com **Ctrl+V** ou com o botão direito do mouse. **A chave não aparece na tela enquanto você cola**, e isso é normal.
+2. Aperte **Enter**.
+
+Ele guarda a chave em `C:\Users\<você>\SuperFaisca-vozes\chave.txt`, fora do projeto, e não pergunta mais.
+
+- Se aparecer **"Pasta vozes/ pronta: 5 frases"**, funcionou!
+- Se aparecer **"O Azure recusou a chave"**, ele apaga a chave errada. Rode de novo e cole a chave certa.
+
+> Se a região do seu recurso **não** for `eastus`, crie também o arquivo `regiao.txt` na pasta `SuperFaisca-vozes`, com a região escrita (ex.: `brazilsouth`).
+
+## Passo 5 — Ouvir o teste
+Rode `python servir.py`, abra o app e toque numa missão: as frases gravadas já saem com a voz da Francisca.
 
 ## Passo 6 — Gravar tudo
 ```powershell
