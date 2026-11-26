@@ -7,8 +7,11 @@ window.SUPER_FAISCA_CONFIG = {
   supabaseAnonKey: "sb_publishable_4e24GuAgTJKLP01AFyEE0Q_ra37pTk_",
 
   // Texto da tela que aparece quando o teste grátis acaba (pode mudar à vontade)
-  preco: "R$ 9,90 por ano",
-  pixChave: "39304898803",          // ex.: "seu-email@exemplo.com" ou CPF/CNPJ/telefone
+  preco: "R$ 29,90 por ano",
+  // Pix "copia e cola" (gerado no app do banco). Se estiver preenchido, aparece no lugar da chave.
+  // Atenção: o valor do Pix fica gravado dentro do código; ele precisa bater com o preço acima.
+  pixCopiaECola: "00020126330014br.gov.bcb.pix011139304898803520400005303986540529.905802BR5925VICTOR HUGO DE OLIVEIRA C6009SAO PAULO62580520SAN2026112321053442350300017br.gov.bcb.brcode01051.0.063043FC0",
+  pixChave: "39304898803",          // usada só se pixCopiaECola estiver vazio. Ex.: e-mail, CPF/CNPJ ou telefone
   whatsapp: "5511948797739",         // só números com DDI e DDD, ex.: "5511999998888"
   mensagemPagamento: "Para continuar usando, faça o pagamento pelo Pix e mande o comprovante pelo WhatsApp com o e-mail da sua conta. Liberamos em até 24 horas.",
 

@@ -200,14 +200,32 @@ const Conta = (() => {
       const linhas = [];
       if (CFG.preco) linhas.push(`<p class="preco">${esc(CFG.preco)}</p>`);
       if (CFG.mensagemPagamento) linhas.push(`<p>${esc(CFG.mensagemPagamento)}</p>`);
-      if (CFG.pixChave) linhas.push(`<p>Chave Pix: <b class="pix">${esc(CFG.pixChave)}</b> <button class="link" id="copiar-pix">copiar</button></p>`);
+      // Pix: o código "copia e cola" tem preferência; se não houver, mostra a chave
+      const pix = CFG.pixCopiaECola || CFG.pixChave;
+      if (CFG.pixCopiaECola) {
+        linhas.push(`<p>Pague com o <b>Pix copia e cola</b>: toque no botão, abra o app do seu banco e cole o código.</p>`);
+        linhas.push(`<button class="btn btn-azul" id="copiar-pix">Copiar código Pix</button>`);
+        linhas.push(`<div class="pix-codigo">${esc(CFG.pixCopiaECola)}</div>`);
+      } else if (CFG.pixChave) {
+        linhas.push(`<p>Chave Pix: <b class="pix">${esc(CFG.pixChave)}</b> <button class="link" id="copiar-pix">copiar</button></p>`);
+      }
       if (CFG.whatsapp) {
         const txt = encodeURIComponent(`Olá! Quero liberar o Super Faísca. Meu e-mail de cadastro é: ${sessao?.email || ""}`);
         linhas.push(`<a class="btn btn-verde" href="https://wa.me/${CFG.whatsapp.replace(/\D/g, "")}?text=${txt}" target="_blank" rel="noopener">Enviar comprovante pelo WhatsApp</a>`);
       }
       pg.innerHTML = linhas.join("");
       const cp = $("#copiar-pix");
-      if (cp) cp.onclick = () => { navigator.clipboard?.writeText(CFG.pixChave); cp.textContent = "copiado!"; };
+      if (cp) cp.onclick = async () => {
+        const antes = cp.textContent;
+        try { await navigator.clipboard.writeText(pix); cp.textContent = "Copiado! ✓"; }
+        catch {
+          // sem permissão para copiar: seleciona o código para a pessoa copiar com o dedo
+          const alvo = pg.querySelector(".pix-codigo, .pix");
+          if (alvo) { const r = document.createRange(); r.selectNodeContents(alvo); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+          cp.textContent = "Segure o código para copiar";
+        }
+        setTimeout(() => { cp.textContent = antes; }, 3000);
+      };
     }
     $("#bloq-msg").textContent = "";
   }
