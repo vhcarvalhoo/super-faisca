@@ -34,7 +34,8 @@ const Voz = {
   /** Voz gravada (Azure): usada quando existe, a não ser que os pais escolham uma voz do aparelho. */
   usarGravada() { const n = EST?.config?.voz_nome || ""; return n === "" || n === VOZ_GRAVADA; },
   init() {
-    Vozes.preparar().then(() => { if ($("#cfg-voz-nome")) preencherVozes(); });
+    Vozes.carregar().then(() => { if ($("#cfg-voz-nome")) preencherVozes(); });
+    Vozes.preparar(); // baixa as gravações em segundo plano
     if (!("speechSynthesis" in window)) return;
     this.escolher();
     speechSynthesis.onvoiceschanged = () => { this.escolher(); if ($("#cfg-voz-nome")) preencherVozes(); };
@@ -42,9 +43,13 @@ const Voz = {
   async falar(txt, { rate } = {}) {
     if (!txt) return;
     Legenda.mostrar(txt);
-    // 1) gravação do Azure, se esta fala foi gravada e o áudio já está no aparelho
+    // 1) gravação do Azure, se esta fala foi gravada. Se o áudio ainda está baixando,
+    //    espera um pouco por ele antes de cair na voz do aparelho.
     const lento = !!rate && rate < 0.8;
-    if (somLigado() && this.usarGravada() && Vozes.pronta(txt, lento)) {
+    const minha = ++this.vez;
+    const gravada = somLigado() && this.usarGravada() && (Vozes.pronta(txt, lento) || (await Vozes.esperar(txt, lento, 3000)));
+    if (minha !== this.vez) return; // outra fala começou enquanto esperava
+    if (gravada) {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
       const btn = $("#btn-ouvir");
       btn?.classList.add("falando");
@@ -73,7 +78,8 @@ const Voz = {
       setTimeout(() => speechSynthesis.speak(u), 60);
     });
   },
-  parar() { Vozes.parar(); if ("speechSynthesis" in window) speechSynthesis.cancel(); },
+  vez: 0, // conta as falas: uma fala que ficou esperando o áudio não toca por cima da seguinte
+  parar() { this.vez++; Vozes.parar(); if ("speechSynthesis" in window) speechSynthesis.cancel(); },
 };
 const VOZ_GRAVADA = "__gravada__";
 
@@ -1089,6 +1095,7 @@ async function preencherPais() {
   $("#cfg-nome").value = c.nome_crianca; $("#cfg-heroi").value = P().nome;
   $("#cfg-personagem").value = EST.personagem || "faisca";
   $("#cfg-som").checked = c.som !== false; $("#cfg-tudo").checked = !!c.liberar_tudo;
+  delete $("#cfg-voz-nome").dataset.mudou;
   preencherVozes();
   Conta.preencherCartao();
   $("#cfg-minutos").value = c.minutos_dia; $("#cfg-meta").value = c.meta_licoes;
@@ -1096,11 +1103,13 @@ async function preencherPais() {
 }
 function preencherVozes() {
   const sel = $("#cfg-voz-nome");
+  const atual = sel.value;
   const vs = Voz.lista();
   const gravada = Vozes.disponivel() ? `<option value="${VOZ_GRAVADA}">⭐ Francisca (voz gravada, a mais natural)</option>` : "";
   sel.innerHTML = gravada + (vs.length
     ? vs.map((v) => `<option value="${esc(v.name)}">${Voz.ehNatural(v) ? "✨ " : ""}${esc(v.name)}${v.localService === false ? " (precisa de internet)" : ""}</option>`).join("")
     : (gravada ? "" : '<option value="">Nenhuma voz em português neste aparelho</option>'));
+  if (sel.dataset.mudou && atual) { sel.value = atual; return; } // não desfaz a escolha que os pais acabaram de fazer
   sel.value = gravada && Voz.usarGravada() ? VOZ_GRAVADA : Voz.voz?.name || "";
 }
 
@@ -1114,8 +1123,9 @@ async function salvarConfig() {
     minutos_dia: Math.max(5, Math.min(60, Number($("#cfg-minutos").value) || 15)),
     meta_licoes: Math.max(1, Math.min(6, Number($("#cfg-meta").value) || 2)),
     voz_velocidade: Number($("#cfg-voz").value) || 0.85,
-    voz_nome: $("#cfg-voz-nome").value,
   };
+  // a voz só muda se os pais mexeram na lista (se a lista abriu antes da Francisca carregar, não troca sozinha)
+  if ($("#cfg-voz-nome").dataset.mudou) dados.voz_nome = $("#cfg-voz-nome").value;
   if (!trocou && nomeP) dados[pers === "fada" ? "nome_fada" : "nome_heroi"] = nomeP;
   if ($("#cfg-senha").value) dados.senha_pais = $("#cfg-senha").value;
   EST = await api("/api/config", dados);
@@ -1168,7 +1178,7 @@ function ligar() {
     EST.config.voz_velocidade = Number($("#cfg-voz").value); EST.config.som = true; EST.config.voz_nome = $("#cfg-voz-nome").value;
     Voz.escolher(); Voz.falar("Oi! Vamos ler juntos? B com A faz ba. Bola! Três mais dois é igual a cinco.");
   };
-  $("#cfg-voz-nome").onchange = () => $("#btn-testar-voz").click();
+  $("#cfg-voz-nome").onchange = () => { $("#cfg-voz-nome").dataset.mudou = "1"; $("#btn-testar-voz").click(); };
   $("#btn-liberar").onclick = async () => { EST = await api("/api/pais/liberar", {}); $("#cfg-ok").textContent = "Tempo de hoje liberado."; preencherPais(); };
   $("#btn-zerar").onclick = async () => {
     const t = prompt('Isso apaga todo o progresso. Digite ZERAR para confirmar:');

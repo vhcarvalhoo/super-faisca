@@ -77,7 +77,7 @@ const Motor = (() => {
   function estadoInicial() {
     return {
       config: { nome_crianca: "", personagem: null, nome_heroi: "Faísca", nome_fada: "Lumi", roupa: "basico", roupa_fada: "basica",
-        minutos_dia: 15, meta_licoes: 2, voz_velocidade: 0.9, voz_nome: "", som: true, liberar_tudo: false, senha_pais: "" },
+        minutos_dia: 15, meta_licoes: 2, voz_velocidade: 0.9, voz_nome: "", voz_v2: true, som: true, liberar_tudo: false, senha_pais: "" },
       xp: 0, licoes: {}, habilidades: {}, medalhas: [], dias: {}, sequencia: 0, ultimo_dia: null, criado: hoje(),
     };
   }
@@ -88,6 +88,9 @@ const Motor = (() => {
       const dados = JSON.parse(bruto);
       const base = { ...estadoInicial(), ...dados };
       base.config = { ...estadoInicial().config, ...(dados.config || {}) };
+      // A voz gravada (Francisca) chegou na v9. Quem salvou a área dos pais antes disso ficou com a voz
+      // do aparelho gravada sem ter escolhido: volta uma vez para o padrão (Francisca).
+      if (!(dados.config || {}).voz_v2) { base.config.voz_nome = ""; base.config.voz_v2 = true; }
       return base;
     } catch (e) {
       return estadoInicial();

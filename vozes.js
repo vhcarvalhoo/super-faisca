@@ -133,11 +133,24 @@ const Vozes = (() => {
     rodada++;
     if (audio) { audio.onended = audio.onerror = null; audio.pause(); audio = null; }
   }
-  /** Baixa o primeiro pacote (as falas mais comuns) em segundo plano. */
+  /** Espera (no máximo `ms`) o índice e os pacotes desta fala chegarem. true = pode tocar a gravação. */
+  function esperar(txt, lento, ms) {
+    const limite = new Promise((r) => setTimeout(() => r(false), ms));
+    const tarefa = (async () => {
+      await carregar();
+      if (!tem(txt, lento)) return false;
+      await Promise.all(partes(txt).map((p) => pacote(indice.falas[chave(p, lento)][0])));
+      return pronta(txt, lento);
+    })().catch(() => false);
+    return Promise.race([tarefa, limite]);
+  }
+  /** Baixa os pacotes em segundo plano, um de cada vez, começando pelas falas mais comuns.
+      Depois da primeira vez, eles vêm do cache do aparelho (funciona sem internet). */
   async function preparar() {
     await carregar();
-    if (indice && indice.pacotes.length && !navigator.connection?.saveData) pacote(0);
+    if (!indice || navigator.connection?.saveData) return;
+    for (let i = 0; i < indice.pacotes.length; i++) await pacote(i);
   }
 
-  return { partes, chave, carregar, preparar, disponivel, tem, pronta, tocar, parar };
+  return { partes, chave, carregar, preparar, disponivel, tem, pronta, esperar, tocar, parar };
 })();
