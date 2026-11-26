@@ -18,6 +18,7 @@ import datetime
 import getpass
 import hashlib
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -42,6 +43,14 @@ PAUSA = 3.2                 # segundos entre pedidos: o plano grátis aceita 20 
 TAMANHO_PACOTE = 3 * 1024 * 1024
 
 
+def limpar_chave(bruta):
+    """Ao colar, alguns terminais mandam códigos invisíveis junto (ex.: ESC[200~ ... ESC[201~).
+    A chave do Azure só tem letras e números, então fica só com isso."""
+    s = re.sub(r"\x1b\[[0-9;]*[~A-Za-z]", "", bruta)
+    s = s.replace("[200~", "").replace("[201~", "")
+    return "".join(c for c in s if c.isascii() and c.isalnum())
+
+
 def ler_config():
     chave_arq = TRABALHO / "chave.txt"
     if not chave_arq.exists() or not chave_arq.read_text(encoding="utf-8").strip():
@@ -50,9 +59,11 @@ def ler_config():
         print("\n  Ainda não tenho a chave do Azure.")
         print("  Cole a CHAVE 1 do seu recurso de Fala (clique com o botão direito ou Ctrl+V) e aperte Enter.")
         print("  Por segurança, a chave não aparece enquanto você cola.\n")
-        chave = getpass.getpass("  Chave: ").strip()
-        if len(chave) < 20:
-            print("\n  Essa chave parece incompleta. Copie de novo a CHAVE 1 no portal do Azure e rode outra vez.")
+        chave = limpar_chave(getpass.getpass("  Chave: "))
+        print(f"  Recebi uma chave com {len(chave)} letras e números.")
+        if len(chave) not in (32, 84):
+            print("\n  Uma chave do Azure tem 32 ou 84 letras e números. Essa parece incompleta ou com algo a mais.")
+            print("  Copie de novo a CHAVE 1 no portal (botão de copiar ao lado dela) e rode outra vez.")
             sys.exit(1)
         chave_arq.write_text(chave + "\n", encoding="utf-8")
         print(f"  Chave guardada em {chave_arq} (fora do projeto, não vai para o GitHub).\n")
