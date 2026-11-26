@@ -41,37 +41,96 @@ body {
 .btn-vermelho { background: var(--vermelho); --sombra: var(--vermelho-esc); }
 .btn-cinza { background: var(--cinza); color: var(--tinta); --sombra: var(--cinza-esc); }
 
-/* ---------- herói ---------- */
-.heroi { width: 100%; height: 100%; overflow: visible; }
-.heroi .capa { fill: var(--capa); }
-.heroi .mascara { fill: var(--capa); filter: brightness(.85); }
-.heroi .traje { fill: #1e3a8a; }
-.heroi .luva, .heroi .bota { fill: var(--capa); }
-.heroi .cinto { fill: #fde047; }
-.heroi .emblema-fundo { fill: #fde047; }
-.heroi .raio { fill: #1e3a8a; }
-.heroi .pele { fill: #f5c69b; }
-.heroi .cabelo { fill: #6b3f1f; }
-.heroi .olho { fill: #1e293b; }
-.heroi .boca { fill: none; stroke: #7c2d12; stroke-width: 4; stroke-linecap: round; }
-.heroi .braco-esq, .heroi .braco-dir { transition: transform .3s; }
-.heroi .braco-esq { transform-origin: 51px 104px; }
-.heroi .braco-dir { transform-origin: 149px 104px; }
-.heroi-slot { width: 64px; height: 74px; }
-.heroi-slot.grande { width: 170px; height: 196px; margin: 0 auto; }
+/* ---------- herói: imagem da roupa + camadas de efeito ---------- */
+.heroi { position: relative; width: 100%; height: 100%; transform-origin: 50% 100%; }
+.heroi img { position: relative; z-index: 1; display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%;
+  filter: drop-shadow(0 6px 4px rgba(15,23,42,.18)); -webkit-user-drag: none; pointer-events: none; }
+.heroi .ef-fundo, .heroi .ef-frente { position: absolute; inset: 0; pointer-events: none; }
+.heroi .ef-frente { z-index: 2; }
+.heroi-slot { width: 64px; height: 74px; position: relative; --raio-orbita: 40px; }
+.heroi-slot.grande { width: 180px; height: 250px; margin: 0 auto; --raio-orbita: 92px; }
+.heroi-slot.medio { width: 100px; height: 150px; --raio-orbita: 56px; }
 .heroi-slot.pequeno { width: 46px; height: 54px; }
+/* espaços pequenos (topo do mapa e balão da lição) mostram só o rosto, num círculo */
+.heroi-slot.pequeno, .heroi-mini .heroi-slot, .licao-fala .heroi-slot { overflow: hidden; border-radius: 50%; }
+.heroi-slot.pequeno .heroi img, .heroi-mini .heroi img, .licao-fala .heroi img {
+  position: absolute; width: 200%; height: auto; max-width: none; left: -50%; top: -34%; filter: none; object-fit: fill; }
+.heroi-slot.pequeno .ef-fundo, .heroi-slot.pequeno .ef-frente, .heroi-mini .ef-fundo, .heroi-mini .ef-frente,
+.licao-fala .ef-fundo, .licao-fala .ef-frente { display: none; }
+/* reações */
 .pulando .heroi { animation: pular 1.6s ease-in-out infinite; }
 @keyframes pular { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
-.comemorando .braco-esq { transform: rotate(150deg); }
-.comemorando .braco-dir { transform: rotate(-150deg); }
 .comemorando .heroi { animation: pular .7s ease-in-out infinite; }
-.feliz .braco-dir { transform: rotate(-150deg); }
 .feliz .heroi { animation: pulinho .5s ease 2; }
 @keyframes pulinho { 50% { transform: translateY(-10px) rotate(-4deg); } }
 .pensando .heroi { animation: inclinar .6s ease; }
 @keyframes inclinar { 50% { transform: rotate(8deg); } }
-.dormindo .heroi { transform: rotate(-8deg); opacity: .9; }
-.dormindo .boca { d: path("M92 80 Q100 82 108 80"); }
+.dormindo .heroi { transform: rotate(-6deg); opacity: .9; filter: saturate(.75); }
+
+/* ---------- efeitos permanentes (ganhos a cada 10 missões) ---------- */
+.ef-aura .ef-fundo::before, .ef-dourado .ef-fundo::after, .ef-aurora .ef-fundo::after {
+  content: ""; position: absolute; left: 50%; top: 52%; width: 125%; height: 95%; border-radius: 50%; transform: translate(-50%, -50%); }
+.ef-aura .ef-fundo::before { background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(125,211,252,.9) 45%, rgba(37,99,235,.4) 78%, transparent);
+  animation: pulsar 2.2s ease-in-out infinite; }
+.ef-dourado .ef-fundo::after { background: radial-gradient(closest-side, rgba(255,255,255,.9), rgba(253,224,71,.85) 45%, rgba(234,179,8,.35) 78%, transparent);
+  animation: pulsar 2.8s ease-in-out infinite; }
+.ef-aurora .ef-fundo::after { background: conic-gradient(#f9a8d4, #c4b5fd, #67e8f9, #86efac, #fde68a, #f9a8d4); filter: blur(16px); opacity: .55;
+  animation: girar-centro 7s linear infinite; }
+@keyframes pulsar { 0%,100% { transform: translate(-50%, -50%) scale(.9); opacity: .7; } 50% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; } }
+@keyframes girar-centro { from { transform: translate(-50%, -50%) rotate(0); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+.ef-dourado img { filter: drop-shadow(0 0 6px rgba(250,204,21,.85)) drop-shadow(0 6px 4px rgba(15,23,42,.18)); }
+/* asas da fada */
+.asas-svg { position: absolute; left: 50%; top: 20%; width: 155%; transform: translateX(-50%); overflow: visible; }
+.asas-svg path { fill: rgba(232,121,249,.38); stroke: #fff; stroke-width: 2.5; }
+.asas-svg .asa-e { transform-origin: 98px 62px; animation: asa-bater 1.6s ease-in-out infinite; }
+.asas-svg .asa-d { transform-origin: 102px 62px; animation: asa-bater 1.6s ease-in-out infinite; }
+@keyframes asa-bater { 50% { transform: scaleX(.86); } }
+/* órbita de faíscas ou corações */
+.orbita { position: absolute; left: 50%; top: 50%; width: 0; height: 0; animation: girar 5s linear infinite; }
+.orbita span { position: absolute; left: 0; top: 0; transform: rotate(calc(var(--i) * 120deg)) translateX(var(--raio-orbita)); }
+.orbita span i { display: block; font-style: normal; font-size: 1.5rem; margin: -.75em 0 0 -.5em; animation: girar 5s linear infinite reverse; }
+@keyframes girar { to { transform: rotate(360deg); } }
+/* estrelinhas piscando */
+.brilho { position: absolute; width: 18px; height: 18px; background: #fde047;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); animation: piscar 1.6s ease-in-out infinite; }
+.ef-aurora .brilho { background: #f0abfc; }
+.brilho.b1 { left: 2%; top: 14%; } .brilho.b2 { right: 0; top: 4%; animation-delay: .4s; }
+.brilho.b3 { right: 4%; top: 56%; animation-delay: .8s; } .brilho.b4 { left: 0; top: 64%; animation-delay: 1.2s; }
+@keyframes piscar { 50% { opacity: .2; transform: scale(.5); } }
+
+/* ---------- poderes (efeitos rápidos por cima da tela) ---------- */
+.fx { position: fixed; z-index: 40; width: 0; height: 0; pointer-events: none; }
+.fx * { pointer-events: none; }
+.fx-rastro i { position: absolute; left: 0; top: -4px; width: 240px; height: 8px; border-radius: 4px; transform-origin: left;
+  background: linear-gradient(90deg, #38bdf8, #a5f3fc 60%, transparent); animation: rastro 1s ease-out forwards; }
+.fx-rastro span { position: absolute; left: 0; top: -16px; font-size: 1.5rem; animation: voar-direita 1s ease-out forwards; }
+.fx-rastro span:nth-of-type(2) { top: -34px; animation-delay: .12s; } .fx-rastro span:nth-of-type(3) { top: 4px; animation-delay: .24s; }
+@keyframes rastro { from { transform: scaleX(0); opacity: 1; } 70% { opacity: 1; } to { transform: scaleX(1); opacity: 0; } }
+@keyframes voar-direita { from { transform: translateX(0) scale(.5); opacity: 1; } to { transform: translateX(220px) scale(1.2); opacity: 0; } }
+.fx.fx-petalas { left: 0 !important; top: 0 !important; }
+.fx-petalas span { position: fixed; top: -40px; font-size: 1.8rem; animation: cair 1.7s ease-in forwards; }
+@keyframes cair { to { transform: translateY(105vh) rotate(280deg); opacity: .3; } }
+.fx-escudo svg { position: absolute; width: 130px; height: 130px; left: -65px; top: -65px; animation: surgir 1.6s ease forwards; }
+.fx-escudo polygon { fill: rgba(59,130,246,.22); stroke: #fbbf24; stroke-width: 5; stroke-linejoin: round; }
+.fx-bolha div { position: absolute; width: 130px; height: 130px; left: -65px; top: -65px; border-radius: 50%; border: 2px solid rgba(255,255,255,.9);
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(196,181,253,.35) 45%, rgba(244,114,182,.25)); animation: surgir 1.8s ease forwards; }
+.fx-bolha span { position: absolute; font-size: 1.4rem; margin: -.7em 0 0 -.7em; animation: subir 1.8s ease-out forwards; }
+.fx-bolha span:nth-of-type(1) { left: -58px; top: -30px; } .fx-bolha span:nth-of-type(2) { left: 52px; top: -40px; animation-delay: .15s; }
+.fx-bolha span:nth-of-type(3) { left: 0; top: -78px; animation-delay: .3s; }
+@keyframes surgir { from { transform: scale(.2); opacity: 0; } 25% { transform: scale(1.1); opacity: 1; } 70% { transform: scale(1); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
+@keyframes subir { from { transform: translateY(10px) scale(.5); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(-40px) scale(1.1); opacity: 0; } }
+.fx-pistas span { position: absolute; font-size: 1.5rem; margin: -.75em 0 0 -.5em; animation: pista 1.2s ease-out forwards; }
+@keyframes pista { from { transform: rotate(var(--a)) translateX(10px) scale(.4); opacity: 0; } 30% { opacity: 1; }
+  to { transform: rotate(var(--a)) translateX(120px) scale(1.1); opacity: 0; } }
+.pulo-relampago { animation: pulo-relampago 1.2s ease-out; }
+@keyframes pulo-relampago { 30% { transform: translateY(-36px) scale(1.05); } 60% { transform: translateY(0); } 75% { transform: translateY(-10px); } }
+#tela-fim .fim-box { padding-top: 46px; } /* espaço para o pulo e as faíscas não cortarem no topo */
+.fx-pulo svg { position: absolute; width: 240px; height: 120px; left: -120px; top: -150px; overflow: visible; }
+.fx-pulo path { fill: none; stroke: #38bdf8; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 320; stroke-dashoffset: 320; animation: desenhar 1.4s ease-out forwards; }
+@keyframes desenhar { 50% { stroke-dashoffset: 0; opacity: 1; } to { stroke-dashoffset: 0; opacity: 0; } }
+.fx-pulo span { position: absolute; font-size: 1.8rem; margin: -.75em 0 0 -.5em; opacity: 0; animation: subir 1s ease-out .35s forwards; }
+.fx-pulo span:nth-of-type(1) { left: -100px; top: -60px; } .fx-pulo span:nth-of-type(2) { left: 0; top: -150px; } .fx-pulo span:nth-of-type(3) { left: 100px; top: -60px; }
+@media (prefers-reduced-motion: reduce) { .orbita, .orbita span i, .asas-svg g, .brilho, .ef-fundo::before, .ef-fundo::after { animation: none !important; } }
 
 /* ---------- início ---------- */
 .inicio-box { margin: auto; text-align: center; padding: 20px; }
@@ -85,7 +144,7 @@ body {
 .heroi-mini { width: 78px; height: 78px; flex: none; border-radius: 50%; border: 4px solid var(--capa); padding: 0; cursor: pointer;
   background: radial-gradient(circle at 50% 35%, #ffffff, #bae6fd); box-shadow: 0 4px 0 rgba(0,0,0,.12); overflow: hidden;
   display: flex; align-items: flex-start; justify-content: center; }
-.heroi-mini .heroi-slot { width: 74px; height: 86px; margin-top: 4px; }
+.heroi-mini .heroi-slot { width: 100%; height: 100%; }
 .heroi-mini:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12); }
 .stat { font-size: 1.3rem; font-weight: 800; background: #fff; padding: 6px 12px; border-radius: 14px; box-shadow: 0 2px 0 #e2e8f0; }
 .meta { display: flex; gap: 4px; margin-left: auto; }
@@ -255,11 +314,6 @@ body {
 /* coleção */
 .colecao { padding: 0 16px 40px; text-align: center; }
 .colecao h3 { margin: 30px 0 12px; }
-.capas { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-.capa-op { width: 74px; height: 74px; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 4px 0 #cbd5e1; cursor: pointer; position: relative; font-size: 1.6rem; }
-.capa-op.sel { border-color: #1e3a8a; }
-.capa-op.bloq { filter: grayscale(1); opacity: .45; cursor: default; }
-.capa-op small { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: .75rem; font-weight: 800; white-space: nowrap; color: var(--suave); }
 .medalhas { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-top: 10px; }
 .medalha { background: #fff; border-radius: 18px; padding: 12px 6px; box-shadow: 0 4px 0 #e2e8f0; font-weight: 800; font-size: .9rem; }
 .medalha b { display: block; font-size: 2.4rem; }
@@ -301,34 +355,10 @@ input[type=range] { padding: 0; }
 }
 
 /* =================================================================== v3 */
-/* ---------- Fada Lumi ---------- */
-.heroi.fada .asa { fill: var(--capa); opacity: .35; stroke: #fff; stroke-width: 3; }
-.heroi.fada .vestido { fill: var(--capa); }
-.heroi.fada .faixa { fill: #fde047; }
-.heroi.fada .sapato { fill: var(--capa); filter: brightness(.8); }
-.heroi.fada .cabelo { fill: #5b3417; }
-.heroi.fada .varinha { stroke: #a16207; stroke-width: 4; stroke-linecap: round; }
-.heroi.fada .estrela-varinha { fill: #fde047; stroke: #f59e0b; stroke-width: 2; }
-.heroi.fada .cilio { fill: none; stroke: #1e293b; stroke-width: 2.5; stroke-linecap: round; }
-.heroi.fada .braco-esq { transform-origin: 56px 104px; }
-.heroi.fada .braco-dir { transform-origin: 143px 104px; }
-.heroi.fada .asas { transform-origin: 100px 120px; animation: bater 1.8s ease-in-out infinite; }
-@keyframes bater { 50% { transform: scaleX(.92); } }
-/* evoluções: brilho (nível 2) e coroa (nível 3) */
-.heroi .ac-brilho, .heroi .ac-coroa { display: none; }
-html[data-nivel="2"] .heroi .ac-brilho, html[data-nivel="3"] .heroi .ac-brilho { display: inline; }
-html[data-nivel="3"] .heroi .ac-coroa { display: inline; }
-.heroi .ac-brilho path { fill: #fde047; animation: piscar 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.heroi .ac-brilho path:nth-child(2) { animation-delay: .4s; } .heroi .ac-brilho path:nth-child(3) { animation-delay: .8s; }
-@keyframes piscar { 50% { opacity: .2; transform: scale(.6); } }
-.heroi .coroa { fill: #facc15; stroke: #ca8a04; stroke-width: 2; }
-[data-personagem] .heroi-slot[data-personagem] .heroi .ac-brilho, .escolha .heroi .ac-brilho, .escolha .heroi .ac-coroa,
-.login-herois .heroi .ac-brilho, .login-herois .heroi .ac-coroa { display: none; }
-.heroi-slot.medio { width: 110px; height: 126px; }
 
 /* ---------- balão de fala (legenda da lição) ---------- */
 .licao-fala { display: flex; align-items: center; gap: 10px; padding: 0 14px 6px; }
-.licao-fala .heroi-slot { flex: none; width: 58px; height: 68px; }
+.licao-fala .heroi-slot { flex: none; width: 60px; height: 60px; background: radial-gradient(circle at 50% 35%, #fff, #bae6fd); border: 3px solid var(--capa); }
 .balao-fala { flex: 1; position: relative; background: #fff; border: 3px solid #bfdbfe; border-radius: 20px; padding: 10px 16px; min-height: 56px;
   display: flex; align-items: center; box-shadow: 0 4px 0 #dbeafe; }
 .balao-fala::before { content: ""; position: absolute; left: -13px; top: 50%; transform: translateY(-50%); border: 10px solid transparent; border-right-color: #bfdbfe; border-left: 0; }
@@ -473,13 +503,11 @@ html[data-nivel="3"] .heroi .ac-coroa { display: inline; }
 .dias { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
 .dias span { background: #fff; border-radius: 10px; padding: 6px 10px; font-weight: 800; box-shadow: 0 3px 0 #e2e8f0; }
 .dias span.destaque { background: var(--laranja); color: #fff; }
-.niveis { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.niveis .medalha { min-width: 130px; } .niveis small { display: block; color: var(--suave); }
 select { font: inherit; font-size: 1.05rem; padding: 10px 12px; border-radius: 12px; border: 2px solid #cbd5e1; max-width: 320px; background: #fff; }
 
 @media (max-width: 520px) {
   .balao-fala p { font-size: 1.05rem; }
-  .licao-fala .heroi-slot { width: 44px; height: 52px; }
+  .licao-fala .heroi-slot { width: 48px; height: 48px; }
   .licao-fala .btn-som { width: 50px; height: 50px; font-size: 1.4rem; }
   .op.txt { font-size: 1.1rem; min-width: 100px; }
   .mc-texto.letra { font-size: 5rem; } .mc-texto.palavra { font-size: 2rem; } .mc-texto.frase { font-size: 1.4rem; }
@@ -488,3 +516,34 @@ select { font: inherit; font-size: 1.05rem; padding: 10px 12px; border-radius: 1
 }
 
 .dica-voz { color: var(--suave); font-weight: 600; }
+
+/* =================================================================== v7: roupas, nível e evolução */
+.barra-nivel { width: min(100%, 360px); margin: 8px auto 0; text-align: left; }
+.bn-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 800; }
+.bn-topo b { font-size: 1.15rem; color: var(--capa); }
+.bn-topo span { color: var(--suave); font-size: .9rem; }
+.bn-trilho { height: 14px; background: #e2e8f0; border-radius: 7px; overflow: hidden; margin: 4px 0; }
+.bn-cheio { height: 100%; background: var(--capa); border-radius: 7px; transition: width .6s; }
+.barra-nivel small { display: block; color: var(--suave); font-weight: 700; font-size: .9rem; }
+.bn-etapas { display: flex; justify-content: space-between; font-size: 1.2rem; }
+.bn-etapas span { filter: grayscale(1); opacity: .45; } .bn-etapas span.ok { filter: none; opacity: 1; }
+.escolha .barra-nivel { width: 100%; min-width: 150px; }
+#fim-nivel .barra-nivel, #colecao-nivel .barra-nivel { background: #fff; padding: 10px 14px; border-radius: 16px; box-shadow: 0 4px 0 #e2e8f0; }
+#fim-nivel .barra-nivel { margin: 0 auto 22px; }
+.premio-roupa, .premio-poder, .premio-efeito { border: 3px solid var(--capa); }
+.roupas { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.roupa-op { width: 96px; height: 136px; border-radius: 18px; border: 4px solid #fff; background: radial-gradient(circle at 50% 30%, #fff, #e0f2fe);
+  box-shadow: 0 4px 0 #cbd5e1; cursor: pointer; position: relative; padding: 4px 4px 24px; font-family: inherit; }
+.roupa-op img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.roupa-op.sel { border-color: var(--capa); box-shadow: 0 4px 0 var(--capa); }
+.roupa-op.bloq img { filter: grayscale(1) brightness(1.15); opacity: .45; }
+.roupa-op small { position: absolute; left: 3px; right: 3px; bottom: 4px; font-size: .72rem; font-weight: 800; color: var(--suave); line-height: 1.1; }
+.roupa-breve { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2.6rem; filter: grayscale(1); opacity: .5; }
+.evolucao { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; text-align: left; }
+.evo { display: flex; gap: 10px; align-items: center; background: #fff; border-radius: 16px; padding: 10px 12px; box-shadow: 0 4px 0 #e2e8f0; }
+.evo b { font-size: 2rem; flex: none; } .evo strong { display: block; } .evo small { color: var(--suave); font-weight: 700; }
+.evo.nao { opacity: .55; }
+@media (min-width: 700px) {
+  .escolha .heroi-slot.grande { width: 220px; height: 300px; }
+  .colecao > .heroi-slot.grande, .fim-box > .heroi-slot.grande, .inicio-box > .heroi-slot.grande { width: 210px; height: 290px; --raio-orbita: 106px; }
+}

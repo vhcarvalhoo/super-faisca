@@ -5,33 +5,57 @@
 const Motor = (() => {
   const CHAVE = "superfaisca:progresso:v1";
 
-  // Recompensas: cores liberadas por pontos (capa do Faísca, vestido e asas da Fada)
-  const CAPAS = [
-    { id: "laranja", nome: "Laranja", cor: "#ff8a1f", xp: 0 },
-    { id: "turquesa", nome: "Turquesa", cor: "#14b8a6", xp: 50 },
-    { id: "roxo", nome: "Roxo", cor: "#8b5cf6", xp: 150 },
-    { id: "verde", nome: "Verde", cor: "#22c55e", xp: 300 },
-    { id: "rosa", nome: "Rosa", cor: "#ec4899", xp: 450 },
-    { id: "dourado", nome: "Dourado", cor: "#eab308", xp: 650 },
-    { id: "galaxia", nome: "Galáxia", cor: "#1e3a8a", xp: 900 },
-  ];
-  const CORES_FADA = [
-    { id: "rosa", nome: "Rosa", cor: "#ec4899", xp: 0 },
-    { id: "lilas", nome: "Lilás", cor: "#a78bfa", xp: 50 },
-    { id: "menta", nome: "Menta", cor: "#34d399", xp: 150 },
-    { id: "ceu", nome: "Céu", cor: "#38bdf8", xp: 300 },
-    { id: "coral", nome: "Coral", cor: "#fb7185", xp: 450 },
-    { id: "dourada", nome: "Dourada", cor: "#eab308", xp: 650 },
-    { id: "estrelada", nome: "Estrelada", cor: "#4338ca", xp: 900 },
-  ];
-  // Evoluções visuais (valem para os dois personagens)
-  const NIVEIS = [
-    { nivel: 1, nome: "Aprendiz", xp: 0, icone: "🌱" },
-    { nivel: 2, nome: "Brilho mágico", xp: 300, icone: "✨" },
-    { nivel: 3, nome: "Coroa de campeão", xp: 650, icone: "👑" },
-  ];
-  const coresDe = (p) => (p === "fada" ? CORES_FADA : CAPAS);
-  const nivelDe = (xp) => NIVEIS.filter((n) => xp >= n.xp).pop().nivel;
+  /* Trilha de evolução: a cada 10 missões diferentes concluídas o personagem ganha algo.
+     tipo "roupa"  = nova roupa (imagem em personagens/<img>.webp); "em_breve" = arte ainda não feita
+     tipo "poder"  = efeito que aparece numa hora certa (acerto, dica, sequência, fim da missão)
+     tipo "efeito" = enfeite que fica sempre em volta do personagem
+     cor = cor de destaque do app com aquela roupa (botões, barras e desenhos das lições) */
+  const TRILHAS = {
+    faisca: [
+      { licoes: 0, tipo: "roupa", id: "basico", nome: "Explorador da Faísca", img: "faisca-basico", cor: "#2563eb", icone: "👕" },
+      { licoes: 10, tipo: "poder", id: "pulo", nome: "Pulo Relâmpago", icone: "⚡", desc: "Pula com faíscas no fim da missão" },
+      { licoes: 20, tipo: "efeito", id: "aura", nome: "Aura Elétrica", icone: "💙", desc: "Um brilho azul em volta do herói" },
+      { licoes: 30, tipo: "roupa", id: "esportivo", nome: "Craque Turbo", img: "faisca-esportivo", cor: "#0284c7", icone: "⚽" },
+      { licoes: 40, tipo: "poder", id: "rastro", nome: "Rastro Turbo", icone: "💨", desc: "Raios de luz a cada acerto" },
+      { licoes: 50, tipo: "efeito", id: "orbita", nome: "Faíscas em Órbita", icone: "✨", desc: "Faíscas girando em volta do herói" },
+      { licoes: 60, tipo: "roupa", id: "heroi", nome: "Super Faísca", img: "faisca-heroi", cor: "#dc2626", icone: "🦸" },
+      { licoes: 70, tipo: "poder", id: "escudo", nome: "Escudo de Ideias", icone: "🛡️", desc: "Um escudo de luz depois de 3 acertos seguidos" },
+      { licoes: 80, tipo: "efeito", id: "dourado", nome: "Brilho Dourado", icone: "🌟", desc: "Estrelas douradas em volta do herói" },
+      { licoes: 90, tipo: "em_breve", id: "tempestade", nome: "Capitão Tempestade", icone: "🌩️" },
+      { licoes: 120, tipo: "em_breve", id: "cosmico", nome: "Lenda Cósmica", icone: "🌌" },
+    ],
+    fada: [
+      { licoes: 0, tipo: "roupa", id: "basica", nome: "Aprendiz das Estrelas", img: "fada-basica", cor: "#db2777", icone: "👗" },
+      { licoes: 10, tipo: "poder", id: "pistas", nome: "Pó de Pistas", icone: "✨", desc: "Brilhinhos mágicos quando aparece uma dica" },
+      { licoes: 20, tipo: "efeito", id: "asas", nome: "Asas de Luz", icone: "🧚", desc: "A fada ganha asas brilhantes" },
+      { licoes: 30, tipo: "roupa", id: "princesa", nome: "Princesa Lumi", img: "fada-princesa", cor: "#9333ea", icone: "👑" },
+      { licoes: 40, tipo: "poder", id: "petalas", nome: "Chuva de Pétalas", icone: "🌸", desc: "Pétalas caem a cada acerto" },
+      { licoes: 50, tipo: "efeito", id: "coracoes", nome: "Corações em Órbita", icone: "💖", desc: "Corações girando em volta da fada" },
+      { licoes: 60, tipo: "roupa", id: "astronauta", nome: "Astronauta Lumi", img: "fada-astronauta", cor: "#7c3aed", icone: "🚀" },
+      { licoes: 70, tipo: "poder", id: "bolha", nome: "Bolha de Imaginação", icone: "🫧", desc: "Uma bolha mágica depois de 3 acertos seguidos" },
+      { licoes: 80, tipo: "efeito", id: "aurora", nome: "Brilho Aurora", icone: "🌈", desc: "Um brilho de arco-íris em volta da fada" },
+      { licoes: 90, tipo: "em_breve", id: "aurora_roupa", nome: "Fada Aurora", icone: "🌈" },
+      { licoes: 120, tipo: "em_breve", id: "cosmica", nome: "Guardiã Cósmica", icone: "🌌" },
+    ],
+  };
+  const trilhaDe = (p) => TRILHAS[p === "fada" ? "fada" : "faisca"];
+  /** Missões diferentes já concluídas (repetir a mesma missão não conta de novo). */
+  const licoesFeitas = (est) => Object.values(est.licoes).filter((i) => (i.vezes || 0) > 0).length;
+  const nivelDe = (feitas) => Math.floor(feitas / 10) + 1;
+  /** Tudo que o personagem tem, para as telas. */
+  function evolucao(est, p) {
+    const feitas = licoesFeitas(est);
+    const trilha = trilhaDe(p).map((t) => ({ ...t, tem: t.tipo !== "em_breve" && feitas >= t.licoes }));
+    const roupas = trilha.filter((t) => t.tipo === "roupa" || t.tipo === "em_breve");
+    const escolhida = est.config[p === "fada" ? "roupa_fada" : "roupa"];
+    const roupa = roupas.find((r) => r.id === escolhida && r.tem) || roupas[0];
+    const proximo = trilha.find((t) => t.tipo !== "em_breve" && feitas < t.licoes) || null;
+    return {
+      licoes_feitas: feitas, nivel: nivelDe(feitas), trilha, roupas, roupa,
+      poderes: trilha.filter((t) => t.tem && (t.tipo === "poder" || t.tipo === "efeito")).map((t) => t.id),
+      proximo: proximo && { ...proximo, faltam: proximo.licoes - feitas },
+    };
+  }
   const MEDALHAS = [
     ["primeira", "Primeira missão", "🚀"], ["vogais", "Mestre das vogais", "🅰️"], ["palavras", "Primeiras palavras", "📖"],
     ["leitor", "Pequeno leitor", "📚"], ["contador", "Contador até 5", "🖐️"], ["dez", "Amigo do dez", "🔟"],
@@ -52,7 +76,7 @@ const Motor = (() => {
   /* ---------- armazenamento ---------- */
   function estadoInicial() {
     return {
-      config: { nome_crianca: "", personagem: null, nome_heroi: "Faísca", nome_fada: "Lumi", capa: "laranja", capa_fada: "rosa",
+      config: { nome_crianca: "", personagem: null, nome_heroi: "Faísca", nome_fada: "Lumi", roupa: "basico", roupa_fada: "basica",
         minutos_dia: 15, meta_licoes: 2, voz_velocidade: 0.9, voz_nome: "", som: true, liberar_tudo: false, senha_pais: "" },
       xp: 0, licoes: {}, habilidades: {}, medalhas: [], dias: {}, sequencia: 0, ultimo_dia: null, criado: hoje(),
     };
@@ -102,8 +126,9 @@ const Motor = (() => {
     return {
       config, tem_senha: !!senha_pais, xp: est.xp, sequencia,
       hoje: { ...(est.dias[hoje()] || { licoes: 0, segundos: 0, xp: 0 }) },
-      personagem: p, capas: coresDe(p), capa_atual: p === "fada" ? config.capa_fada : config.capa,
-      nivel: nivelDe(est.xp), niveis: NIVEIS,
+      personagem: p, ...evolucao(est, p),
+      // as duas trilhas, para desenhar o menino e a menina na tela de escolha
+      inicio_trilhas: { faisca: evolucao(est, "faisca"), fada: evolucao(est, "fada") },
       medalhas: MEDALHAS.map(([id, nome, icone]) => ({ id, nome, icone, tem: est.medalhas.includes(id) })),
       trilhas: trilhasComStatus(est),
       revisao_disponivel: licoesParaRevisar(est).length > 0,
@@ -153,6 +178,7 @@ const Motor = (() => {
     const estrelas = erros <= 1 ? 3 : acerto >= 0.6 ? 2 : 1;
     let xp = 10 + certas * 2 + (estrelas === 3 ? 5 : 0);
     const novas = [];
+    const feitasAntes = licoesFeitas(est);
 
     if (lid !== "revisao") {
       const info = (est.licoes[lid] = est.licoes[lid] || { vezes: 0, estrelas: 0 });
@@ -201,8 +227,9 @@ const Motor = (() => {
     return {
       estrelas, xp, acerto: Math.round(acerto * 100) / 100,
       medalhas: novas.map((m) => ({ id: m, nome: nomes[m][0], icone: nomes[m][1] })),
-      capas: coresDe(est.config.personagem).filter((c) => est.xp - xp < c.xp && c.xp <= est.xp),
-      niveis: NIVEIS.filter((n) => est.xp - xp < n.xp && n.xp <= est.xp),
+      // o que o personagem ganhou nesta missão (roupa, poder ou efeito)
+      ganhos: trilhaDe(est.config.personagem).filter((t) => t.tipo !== "em_breve" && feitasAntes < t.licoes && t.licoes <= licoesFeitas(est)),
+      subiu_nivel: nivelDe(licoesFeitas(est)) > nivelDe(feitasAntes),
     };
   }
 
@@ -236,7 +263,7 @@ const Motor = (() => {
   }
 
   /* ---------- "API" local: mesmas rotas que a versão com servidor ---------- */
-  const CONFIG_PERMITIDA = ["nome_crianca", "personagem", "nome_heroi", "nome_fada", "capa", "capa_fada", "minutos_dia", "meta_licoes",
+  const CONFIG_PERMITIDA = ["nome_crianca", "personagem", "nome_heroi", "nome_fada", "roupa", "roupa_fada", "minutos_dia", "meta_licoes",
     "voz_velocidade", "voz_nome", "som", "liberar_tudo", "senha_pais"];
 
   async function api(caminho, dados) {

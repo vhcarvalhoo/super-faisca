@@ -1,9 +1,11 @@
 /* Service worker do Super Faísca: guarda o app no aparelho para funcionar sem internet.
    Ao publicar uma versão nova, aumente o número em VERSAO para o tablet baixar os arquivos novos. */
-const VERSAO = "super-faisca-v6";
+const VERSAO = "super-faisca-v7";
 const ARQUIVOS = [
   "./", "./index.html", "./style.css", "./app.js", "./curriculo.js", "./curriculo_extra.js", "./motor.js", "./conta.js", "./config.js",
   "./manifest.webmanifest", "./privacidade.html",
+  "./personagens/faisca-basico.webp", "./personagens/faisca-esportivo.webp", "./personagens/faisca-heroi.webp",
+  "./personagens/fada-basica.webp", "./personagens/fada-princesa.webp", "./personagens/fada-astronauta.webp",
   "./icones/icone-192.png", "./icones/icone-512.png", "./icones/icone-maskable-192.png",
   "./icones/icone-maskable-512.png", "./icones/apple-touch-icon.png",
 ];

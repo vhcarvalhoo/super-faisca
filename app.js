@@ -92,8 +92,8 @@ function atualizarBotoesSom() { $$(".btn-som-toggle").forEach((b) => { b.textCon
 const P = () => {
   const fada = EST?.personagem === "fada";
   const nome = fada ? (EST?.config?.nome_fada || "Lumi") : (EST?.config?.nome_heroi || "Faísca");
-  return { fada, nome, artigo: fada ? "a" : "o", oNome: `${fada ? "A" : "O"} ${nome}`, peca: fada ? "a cor do vestido e das asas" : "a cor da capa",
-    peca_curta: fada ? "cor" : "capa", titulo: fada ? "Minha fada" : "Meu herói", icone: fada ? "🧚" : "🦸" };
+  return { fada, nome, artigo: fada ? "a" : "o", oNome: `${fada ? "A" : "O"} ${nome}`, quem: fada ? "a fada" : "o herói", doQuem: fada ? "da sua fada" : "do seu herói",
+    titulo: fada ? "Minha fada" : "Meu herói", icone: fada ? "🧚" : "🦸" };
 };
 
 /* ------------------------------------------------------------ sons */
@@ -128,21 +128,103 @@ function mostrar(id) {
   $("#" + id).classList.add("ativa");
   $("#" + id).scrollTop = 0;
 }
-/** Desenha o personagem certo em cada espaço (.heroi-slot). */
+/* Cada personagem é uma imagem (personagens/<roupa>.webp) com camadas de efeito
+   atrás (aura, asas, brilho) e na frente (faíscas e corações em órbita, estrelas). */
+const IMG_INICIAL = { faisca: "faisca-basico", fada: "fada-basica" };
+const NOME_PERSONAGEM = { faisca: "Super Faísca", fada: "Fada Lumi" };
+const ASAS_SVG = `<svg class="asas-svg" viewBox="0 0 200 120" aria-hidden="true">
+  <g class="asa-e"><path d="M98 60 C70 0 10 4 14 40 C18 66 60 70 98 60 Z"/><path d="M98 64 C66 72 30 100 46 114 C62 124 88 96 98 64 Z"/></g>
+  <g class="asa-d"><path d="M102 60 C130 0 190 4 186 40 C182 66 140 70 102 60 Z"/><path d="M102 64 C134 72 170 100 154 114 C138 124 112 96 102 64 Z"/></g></svg>`;
+function montarHeroi(quem, img, efeitos = []) {
+  const ef = (id) => efeitos.includes(id);
+  const orbita = ef("orbita") ? "⚡" : ef("coracoes") ? "💖" : "";
+  return `<div class="heroi ${quem} ${efeitos.map((e) => "ef-" + e).join(" ")}">
+    <div class="ef-fundo">${ef("asas") ? ASAS_SVG : ""}</div>
+    <img src="personagens/${img}.webp" alt="${NOME_PERSONAGEM[quem]}" draggable="false">
+    <div class="ef-frente">${orbita ? `<div class="orbita">${[0, 1, 2].map((i) => `<span style="--i:${i}"><i>${orbita}</i></span>`).join("")}</div>` : ""}
+      ${ef("dourado") || ef("aurora") ? `<i class="brilho b1"></i><i class="brilho b2"></i><i class="brilho b3"></i><i class="brilho b4"></i>` : ""}</div>
+  </div>`;
+}
+/** Desenha o personagem certo em cada espaço (.heroi-slot). Espaços com data-personagem
+    (login e escolha) mostram sempre a roupa inicial, sem efeitos. */
 function desenharHerois() {
   const atual = EST?.personagem || "faisca";
   $$(".heroi-slot").forEach((s) => {
+    const fixo = !!s.dataset.personagem;
     const quem = s.dataset.personagem || atual;
-    if (s.dataset.desenhado === quem && s.firstElementChild) return;
-    s.innerHTML = "";
-    s.appendChild($(quem === "fada" ? "#tpl-fada" : "#tpl-faisca").content.cloneNode(true));
-    s.dataset.desenhado = quem;
+    const img = fixo ? IMG_INICIAL[quem] : EST?.roupa?.img || IMG_INICIAL[quem];
+    const efeitos = fixo ? [] : (EST?.poderes || []);
+    const chave = `${quem}|${img}|${efeitos.join(",")}`;
+    if (s.dataset.desenhado === chave && s.firstElementChild) return;
+    s.innerHTML = montarHeroi(quem, img, efeitos);
+    s.dataset.desenhado = chave;
   });
 }
+/** Barra "Nível N" com o progresso até o próximo prêmio. */
+function barraNivel(evo, { etapas = false } = {}) {
+  const prox = evo.proximo;
+  const pct = prox ? ((evo.licoes_feitas % 10) / 10) * 100 : 100;
+  const roupas = evo.roupas.filter((r) => r.tipo === "roupa");
+  return `<div class="barra-nivel">
+    <div class="bn-topo"><b>Nível ${evo.nivel}</b>${etapas ? "" : `<span>${evo.licoes_feitas} ${evo.licoes_feitas === 1 ? "missão" : "missões"}</span>`}</div>
+    <div class="bn-trilho"><div class="bn-cheio" style="width:${pct}%"></div></div>
+    ${etapas ? `<div class="bn-etapas">${roupas.map((r) => `<span class="${r.tem ? "ok" : ""}" title="${r.nome}">${r.icone}</span>`).join("")}</div>`
+      : prox ? `<small>${prox.faltam === 1 ? "Falta 1 missão" : `Faltam ${prox.faltam} missões`} para: ${prox.icone} ${prox.nome}</small>` : `<small>Você ganhou tudo! Novas roupas em breve.</small>`}
+  </div>`;
+}
+function desenharEscolha() {
+  $$(".escolha-nivel").forEach((el) => { el.innerHTML = barraNivel(EST.inicio_trilhas[el.dataset.trilha], { etapas: true }); });
+}
+
+/* ------------------------------------------------------------ poderes */
+/* Efeitos rápidos que aparecem por cima da tela (não atrapalham o toque). */
+const Poderes = {
+  seq: 0,
+  tem: (id) => !!EST?.poderes?.includes(id),
+  /** Cria um efeito centrado no elemento `alvo` e apaga depois de `ms`. */
+  fx(alvo, classe, html, ms = 1400) {
+    if (!alvo || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const r = alvo.getBoundingClientRect();
+    const el = document.createElement("div");
+    el.className = "fx " + classe;
+    el.style.left = `${r.left + r.width / 2}px`;
+    el.style.top = `${r.top + r.height / 2}px`;
+    el.innerHTML = html;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), ms);
+  },
+  acerto() {
+    this.seq++;
+    const h = $("#heroi-licao");
+    if (this.tem("rastro")) this.fx(h, "fx-rastro", `<i></i><span>⚡</span><span>⚡</span><span>⚡</span>`, 1100);
+    if (this.tem("petalas")) {
+      const p = Array.from({ length: 9 }, (_, i) => `<span style="left:${8 + i * 10 + Math.random() * 6}vw;animation-delay:${Math.random() * 0.4}s">🌸</span>`).join("");
+      this.fx(document.body, "fx-petalas", p, 2000);
+    }
+    if (this.seq % 3 === 0) {
+      if (this.tem("escudo")) this.fx(h, "fx-escudo", `<svg viewBox="0 0 100 100"><polygon points="50,4 92,27 92,73 50,96 8,73 8,27"/></svg>`, 1600);
+      if (this.tem("bolha")) this.fx(h, "fx-bolha", `<div></div><span>🔤</span><span>🔢</span><span>⭐</span>`, 1800);
+    }
+  },
+  erro() {
+    this.seq = 0;
+    if (this.tem("pistas")) {
+      const s = Array.from({ length: 8 }, (_, i) => `<span style="--a:${i * 45}deg">✨</span>`).join("");
+      this.fx($("#pergunta"), "fx-pistas", s, 1300);
+    }
+  },
+  fim() {
+    const slot = $("#tela-fim .heroi-slot");
+    if (!this.tem("pulo") || !slot) return;
+    slot.classList.remove("pulo-relampago"); void slot.offsetWidth; slot.classList.add("pulo-relampago");
+    setTimeout(() => slot.classList.remove("pulo-relampago"), 1400);
+    this.fx(slot, "fx-pulo", `<svg viewBox="0 0 200 100"><path d="M10 95 Q100 -30 190 95"/></svg><span>⚡</span><span>⚡</span><span>⚡</span>`, 1500);
+  },
+};
+
 function aplicarCapa() {
-  const cor = EST.capas.find((c) => c.id === EST.capa_atual) || EST.capas[0];
   const raiz = document.documentElement;
-  raiz.style.setProperty("--capa", cor.cor);
+  raiz.style.setProperty("--capa", EST.roupa?.cor || "#2563eb");
   raiz.dataset.nivel = EST.nivel || 1;
   raiz.dataset.personagem = EST.personagem || "faisca";
   $$(".nome-heroi").forEach((e) => (e.textContent = P().nome));
@@ -154,6 +236,7 @@ function reagir(classe) {
   const h = $("#heroi-licao");
   h.classList.remove("feliz", "pensando"); void h.offsetWidth; h.classList.add(classe);
   setTimeout(() => h.classList.remove(classe), 1100);
+  if (classe === "feliz") Poderes.acerto(); else if (classe === "pensando") Poderes.erro();
 }
 const nomeHeroi = () => P().nome;
 const nomeCrianca = () => EST.config.nome_crianca || "";
@@ -181,7 +264,7 @@ async function comecar() {
   Som.toque();
   await carregar();
   Conta.checarEmSegundoPlano();
-  if (!EST.config.personagem) { mostrar("tela-escolha"); desenharHerois(); Voz.falar("Quem vai jogar? Escolha o seu personagem."); return; }
+  if (!EST.config.personagem) { mostrar("tela-escolha"); desenharHerois(); desenharEscolha(); Voz.falar("Quem vai jogar? Escolha o seu personagem."); return; }
   if (tempoEsgotado()) return mostrarPausa();
   mostrar("tela-mapa");
   renderMapa();
@@ -253,6 +336,7 @@ async function abrirLicao(id) {
   const d = await api("/api/licao/iniciar", { id });
   if (!d.questions || !d.questions.length) return;
   L = { id: d.id, title: d.title, fila: d.questions.map((q) => ({ ...q })), pos: 0, resultados: [], inicio: Date.now() };
+  Poderes.seq = 0;
   mostrar("tela-licao");
   desenharHerois();
   proxima();
@@ -356,15 +440,20 @@ async function finalizar() {
   $("#fim-xp").textContent = res.xp;
   const premios = [
     ...res.medalhas.map((m) => `<div class="premio">${m.icone} Nova medalha: ${m.nome}!</div>`),
-    ...res.capas.filter((c) => c.xp > 0).map((c) => `<div class="premio"><span style="color:${c.cor}">⬤</span> Nova ${P().peca_curta}: ${c.nome}! Toque ${P().fada ? "na fada" : "no herói"} para trocar.</div>`),
-    ...(res.niveis || []).filter((n) => n.xp > 0).map((n) => `<div class="premio">${n.icone} Evolução: ${n.nome}!</div>`),
+    ...(res.ganhos || []).map((g) => `<div class="premio premio-${g.tipo}">${g.icone} ${{ roupa: "Roupa nova", poder: "Poder novo", efeito: "Evolução" }[g.tipo]}: ${g.nome}!</div>`),
   ];
   $("#fim-premios").innerHTML = premios.join("");
+  $("#fim-nivel").innerHTML = barraNivel(EST);
+  Poderes.fim();
   const nome = nomeCrianca();
   let fala = `${["", "Boa tentativa", "Muito bem", "Missão perfeita"][res.estrelas]}${nome ? ", " + nome : ""}! Você ganhou ${res.xp} pontos de energia!`;
   if (res.medalhas.length) fala += " E ganhou uma medalha nova!";
-  if (res.capas.some((c) => c.xp > 0)) fala += P().fada ? " Tem cor nova para a fada!" : " Tem capa nova para o herói!";
-  if ((res.niveis || []).some((n) => n.xp > 0)) fala += " E você evoluiu!";
+  if (res.subiu_nivel) fala += ` Você chegou ao nível ${EST.nivel}!`;
+  for (const g of res.ganhos || []) {
+    if (g.tipo === "roupa") fala += ` Ganhou uma roupa nova: ${g.nome}! Toque n${P().fada ? "a fada" : "o herói"} para trocar.`;
+    else if (g.tipo === "poder") fala += ` Ganhou um poder novo: ${g.nome}!`;
+    else fala += ` ${P().oNome} evoluiu: ${g.nome}!`;
+  }
   Voz.falar(fala);
   L = null;
 }
@@ -917,21 +1006,29 @@ function abrirColecao() {
   mostrar("tela-colecao");
   desenharHerois();
   $("#colecao-titulo").textContent = P().titulo;
-  $("#colecao-sub").textContent = P().fada ? "Escolha a cor do vestido e das asas" : "Escolha a cor da capa";
-  $("#lista-niveis").innerHTML = EST.niveis.map((n) => `<div class="medalha ${EST.xp >= n.xp ? "" : "nao"}"><b>${n.icone}</b>${n.nome}<small>${n.xp ? "⚡ " + n.xp : "início"}</small></div>`).join("");
-  $("#lista-capas").innerHTML = EST.capas.map((c) => {
-    const tem = EST.xp >= c.xp;
-    return `<button class="capa-op ${tem ? "" : "bloq"} ${EST.capa_atual === c.id ? "sel" : ""}" data-id="${c.id}" style="background:${c.cor}">
-      ${tem ? "" : "🔒"}<small>${tem ? c.nome : "⚡" + c.xp}</small></button>`;
+  $("#colecao-sub").textContent = `Escolha a roupa ${P().doQuem}`;
+  $("#colecao-nivel").innerHTML = barraNivel(EST);
+  const faltam = (n) => `${n} ${n === 1 ? "missão" : "missões"}`;
+  $("#lista-roupas").innerHTML = EST.roupas.map((r) => {
+    const embreve = r.tipo === "em_breve";
+    const aviso = embreve ? "Em breve" : r.tem ? r.nome : `🔒 ${faltam(r.licoes - EST.licoes_feitas)}`;
+    return `<button class="roupa-op ${r.tem ? "" : "bloq"} ${EST.roupa.id === r.id ? "sel" : ""}" data-id="${r.id}">
+      ${embreve ? `<span class="roupa-breve">${r.icone}</span>` : `<img src="personagens/${r.img}.webp" alt="${r.nome}" draggable="false">`}
+      <small>${aviso}</small></button>`;
   }).join("");
-  $$(".capa-op").forEach((b) => b.onclick = async () => {
-    if (b.classList.contains("bloq")) { Voz.falar(`Junte mais pontos de energia para ganhar essa ${P().peca_curta}!`); return; }
+  $$(".roupa-op").forEach((b) => b.onclick = async () => {
+    const r = EST.roupas.find((x) => x.id === b.dataset.id);
+    if (r.tipo === "em_breve") { Voz.falar(`A roupa ${r.nome} vai chegar em breve!`); return; }
+    if (!r.tem) { const n = r.licoes - EST.licoes_feitas; Voz.falar(`${n === 1 ? "Falta" : "Faltam"} ${faltam(n)} para ganhar a roupa ${r.nome}!`); return; }
     Som.toque();
-    EST = await api("/api/config", P().fada ? { capa_fada: b.dataset.id } : { capa: b.dataset.id });
+    EST = await api("/api/config", P().fada ? { roupa_fada: r.id } : { roupa: r.id });
     aplicarCapa(); abrirColecao();
   });
+  $("#lista-evolucao").innerHTML = EST.trilha.filter((t) => t.tipo === "poder" || t.tipo === "efeito").map((t) => `
+    <div class="evo ${t.tem ? "" : "nao"}"><b>${t.tem ? t.icone : "🔒"}</b><div><strong>${t.nome}</strong>
+      <small>${t.desc}${t.tem ? "" : ` · com ${t.licoes} missões`}</small></div></div>`).join("");
   $("#lista-medalhas").innerHTML = EST.medalhas.map((m) => `<div class="medalha ${m.tem ? "" : "nao"}"><b>${m.icone}</b>${m.nome}</div>`).join("");
-  Voz.falar(P().fada ? "Escolha a cor do vestido e das asas da sua fada!" : "Escolha a cor da capa do seu herói!");
+  Voz.falar(`Escolha a roupa ${P().doQuem}!`);
 }
 
 let contaPais = 0;

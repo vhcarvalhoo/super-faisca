@@ -17,75 +17,14 @@
 </head>
 <body>
 
-<!-- Personagem 1: o Super Faísca (original). A cor da capa muda com --capa -->
-<template id="tpl-faisca">
-<svg class="heroi" viewBox="0 0 200 230" aria-label="Super Faísca">
-  <g class="ac-brilho"><path d="M22 40 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4z"/><path d="M172 24 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z"/><path d="M180 150 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/><path d="M14 150 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/></g>
-  <g class="capa-g">
-    <path class="capa" d="M62 92 Q100 82 138 92 L170 205 Q150 214 132 205 Q116 216 100 206 Q84 216 68 205 Q50 214 30 205 Z"/>
-  </g>
-  <g class="braco-esq"><rect x="40" y="100" width="22" height="58" rx="11" class="traje"/><circle cx="51" cy="160" r="12" class="luva"/></g>
-  <g class="braco-dir"><rect x="138" y="100" width="22" height="58" rx="11" class="traje"/><circle cx="149" cy="160" r="12" class="luva"/></g>
-  <rect x="64" y="92" width="72" height="84" rx="26" class="traje"/>
-  <rect x="64" y="148" width="72" height="12" class="cinto"/>
-  <circle cx="100" cy="122" r="18" class="emblema-fundo"/>
-  <path d="M104 106 L90 124 L100 124 L95 139 L111 119 L101 119 Z" class="raio"/>
-  <rect x="70" y="170" width="24" height="40" rx="10" class="traje"/>
-  <rect x="106" y="170" width="24" height="40" rx="10" class="traje"/>
-  <rect x="66" y="198" width="32" height="18" rx="9" class="bota"/>
-  <rect x="102" y="198" width="32" height="18" rx="9" class="bota"/>
-  <circle cx="100" cy="56" r="40" class="pele"/>
-  <path d="M62 50 Q66 14 100 14 Q136 14 139 48 Q128 32 112 34 Q118 24 104 26 Q98 36 84 32 Q72 36 62 50 Z" class="cabelo"/>
-  <path d="M64 52 Q100 40 136 52 L134 66 Q118 72 104 64 L96 64 Q82 72 66 66 Z" class="mascara"/>
-  <ellipse cx="84" cy="57" rx="8" ry="7" fill="#fff"/><ellipse cx="116" cy="57" rx="8" ry="7" fill="#fff"/>
-  <circle cx="85" cy="58" r="4" class="olho"/><circle cx="117" cy="58" r="4" class="olho"/>
-  <circle cx="86.5" cy="56.5" r="1.4" fill="#fff"/><circle cx="118.5" cy="56.5" r="1.4" fill="#fff"/>
-  <path class="boca" d="M88 76 Q100 88 112 76" />
-  <circle cx="74" cy="74" r="5" fill="#ffb4a2" opacity=".7"/><circle cx="126" cy="74" r="5" fill="#ffb4a2" opacity=".7"/>
-  <g class="ac-coroa"><path d="M76 20 L80 2 L90 14 L100 -2 L110 14 L120 2 L124 20 Z" class="coroa"/><circle cx="100" cy="10" r="3" fill="#ef4444"/></g>
-</svg>
-</template>
-
-<!-- Personagem 2: a Fada Lumi (original). A cor do vestido e das asas muda com --capa -->
-<template id="tpl-fada">
-<svg class="heroi fada" viewBox="0 0 200 230" aria-label="Fada Lumi">
-  <g class="ac-brilho"><path d="M18 36 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4z"/><path d="M176 30 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z"/><path d="M184 160 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/><path d="M12 160 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/></g>
-  <g class="asas">
-    <ellipse cx="52" cy="104" rx="40" ry="26" transform="rotate(-28 52 104)" class="asa"/>
-    <ellipse cx="60" cy="146" rx="28" ry="17" transform="rotate(22 60 146)" class="asa"/>
-    <ellipse cx="148" cy="104" rx="40" ry="26" transform="rotate(28 148 104)" class="asa"/>
-    <ellipse cx="140" cy="146" rx="28" ry="17" transform="rotate(-22 140 146)" class="asa"/>
-  </g>
-  <path d="M60 58 Q56 16 100 14 Q144 16 140 58 L148 116 Q132 112 128 86 L72 86 Q68 112 52 116 Z" class="cabelo"/>
-  <g class="braco-esq"><rect x="48" y="100" width="17" height="52" rx="8.5" class="pele"/><circle cx="56" cy="154" r="9" class="pele"/></g>
-  <g class="braco-dir"><rect x="135" y="100" width="17" height="52" rx="8.5" class="pele"/><circle cx="144" cy="154" r="9" class="pele"/>
-    <line x1="144" y1="156" x2="170" y2="116" class="varinha"/>
-    <path d="M172 100 l4 9 10 1 -7 7 2 10 -9 -5 -9 5 2 -10 -7 -7 10 -1z" class="estrela-varinha"/></g>
-  <rect x="82" y="176" width="13" height="34" rx="6.5" class="pele"/>
-  <rect x="105" y="176" width="13" height="34" rx="6.5" class="pele"/>
-  <ellipse cx="88" cy="210" rx="12" ry="7" class="sapato"/>
-  <ellipse cx="112" cy="210" rx="12" ry="7" class="sapato"/>
-  <path d="M72 94 Q100 86 128 94 L152 184 Q100 198 48 184 Z" class="vestido"/>
-  <path d="M74 120 Q100 128 126 120 L127 128 Q100 136 73 128 Z" class="faixa"/>
-  <circle cx="100" cy="56" r="40" class="pele"/>
-  <path d="M60 52 Q64 20 100 20 Q136 20 140 52 Q126 34 108 38 Q100 30 92 38 Q74 34 60 52 Z" class="cabelo"/>
-  <circle cx="100" cy="16" r="12" class="cabelo"/>
-  <path d="M77 54 q7 -6 14 0" class="cilio"/><path d="M109 54 q7 -6 14 0" class="cilio"/>
-  <ellipse cx="84" cy="60" rx="7" ry="8" fill="#fff"/><ellipse cx="116" cy="60" rx="7" ry="8" fill="#fff"/>
-  <circle cx="85" cy="61" r="4" class="olho"/><circle cx="117" cy="61" r="4" class="olho"/>
-  <circle cx="86.5" cy="59.5" r="1.4" fill="#fff"/><circle cx="118.5" cy="59.5" r="1.4" fill="#fff"/>
-  <path class="boca" d="M89 77 Q100 87 111 77" />
-  <circle cx="72" cy="74" r="6" fill="#ff9fb2" opacity=".75"/><circle cx="128" cy="74" r="6" fill="#ff9fb2" opacity=".75"/>
-  <g class="ac-coroa"><path d="M80 26 L84 8 L92 20 L100 4 L108 20 L116 8 L120 26 Q100 32 80 26 Z" class="coroa"/><circle cx="100" cy="16" r="3" fill="#ec4899"/></g>
-</svg>
-</template>
+<!-- Os personagens são imagens da pasta personagens/ (uma por roupa). Quem monta cada um é desenharHerois() no app.js. -->
 
 <div id="app">
 
   <!-- LOGIN (só aparece quando o login está configurado em config.js) -->
   <section id="tela-login" class="tela">
     <div class="login-box">
-      <div class="login-herois"><div class="heroi-slot medio" data-personagem="faisca" style="--capa:#ff8a1f"></div><div class="heroi-slot medio" data-personagem="fada" style="--capa:#ec4899"></div></div>
+      <div class="login-herois"><div class="heroi-slot medio" data-personagem="faisca"></div><div class="heroi-slot medio" data-personagem="fada"></div></div>
       <h1 class="titulo-app">Super <span>Faísca</span></h1>
       <p class="subtitulo">Letras &amp; Números</p>
       <div class="cartao login-cartao">
@@ -130,13 +69,15 @@
       <h1>Quem vai jogar?</h1>
       <p class="subtitulo">Escolha o seu personagem</p>
       <div class="escolha-cartoes">
-        <button class="escolha" data-personagem="faisca" style="--capa:#ff8a1f">
+        <button class="escolha" data-personagem="faisca" style="--capa:#2563eb">
           <div class="heroi-slot grande" data-personagem="faisca"></div>
           <b>Menino</b><span>Super Faísca</span>
+          <div class="escolha-nivel" data-trilha="faisca"></div>
         </button>
-        <button class="escolha" data-personagem="fada" style="--capa:#ec4899">
+        <button class="escolha" data-personagem="fada" style="--capa:#db2777">
           <div class="heroi-slot grande" data-personagem="fada"></div>
           <b>Menina</b><span>Fada Lumi</span>
+          <div class="escolha-nivel" data-trilha="fada"></div>
         </button>
       </div>
     </div>
@@ -198,6 +139,7 @@
       <div id="fim-estrelas" class="estrelas"></div>
       <div class="fim-xp">⚡ +<b id="fim-xp">0</b></div>
       <div id="fim-premios" class="premios"></div>
+      <div id="fim-nivel"></div>
       <button id="btn-fim" class="btn btn-grande btn-verde">Continuar ▶</button>
     </div>
     <canvas id="confete"></canvas>
@@ -224,10 +166,11 @@
     <header class="licao-topo"><button class="btn-x" data-voltar>✕</button><h2 id="colecao-titulo">Meu personagem</h2><span></span></header>
     <div class="colecao">
       <div class="heroi-slot grande"></div>
-      <h3 id="colecao-sub">Escolha a cor</h3>
-      <div id="lista-capas" class="capas"></div>
-      <h3>Evoluções</h3>
-      <div id="lista-niveis" class="niveis"></div>
+      <div id="colecao-nivel"></div>
+      <h3 id="colecao-sub">Escolha a roupa</h3>
+      <div id="lista-roupas" class="roupas"></div>
+      <h3>Poderes e evoluções</h3>
+      <div id="lista-evolucao" class="evolucao"></div>
       <h3>Medalhas</h3>
       <div id="lista-medalhas" class="medalhas"></div>
     </div>
