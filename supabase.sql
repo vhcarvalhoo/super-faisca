@@ -9,6 +9,7 @@ create table if not exists public.acessos (
   user_id       uuid primary key references auth.users(id) on delete cascade,
   email         text not null,
   nome          text,
+  celular       text,                                                      -- só números, com DDD
   criado_em     timestamptz not null default now(),
   teste_ate     timestamptz not null default (now() + interval '7 days'),  -- 7 dias grátis
   liberado_ate  timestamptz,                                               -- preenchido quando você libera
@@ -16,6 +17,9 @@ create table if not exists public.acessos (
   observacao    text,
   atualizado_em timestamptz not null default now()
 );
+
+-- quem já tinha rodado uma versão antiga deste script ganha a coluna do celular
+alter table public.acessos add column if not exists celular text;
 
 -- 2) Quem pode usar o painel de administração (coloque o SEU e-mail no passo 8)
 create table if not exists public.admins (
@@ -36,11 +40,18 @@ create policy "ver o proprio acesso" on public.acessos
   for select using (user_id = auth.uid() or public.sou_admin());
 
 -- 4) Cria a linha automaticamente quando alguém cria uma conta no app
+--    (pelo e-mail vêm "nome" e "celular"; pelo Google vêm "full_name" ou "name")
+create or replace function public.nome_do_cadastro(meta jsonb)
+returns text language sql immutable as $$
+  select nullif(trim(coalesce(meta ->> 'nome', meta ->> 'full_name', meta ->> 'name', '')), '');
+$$;
+
 create or replace function public.novo_usuario()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.acessos (user_id, email, nome)
-  values (new.id, new.email, new.raw_user_meta_data ->> 'nome')
+  insert into public.acessos (user_id, email, nome, celular)
+  values (new.id, new.email, public.nome_do_cadastro(new.raw_user_meta_data),
+          nullif(regexp_replace(coalesce(new.raw_user_meta_data ->> 'celular', ''), '\D', '', 'g'), ''))
   on conflict (user_id) do nothing;
   return new;
 end $$;
@@ -58,12 +69,14 @@ begin
   if auth.uid() is null then return null; end if;
   select * into a from public.acessos where user_id = auth.uid();
   if not found then
-    insert into public.acessos (user_id, email, nome)
-    select u.id, u.email, u.raw_user_meta_data ->> 'nome' from auth.users u where u.id = auth.uid()
+    insert into public.acessos (user_id, email, nome, celular)
+    select u.id, u.email, public.nome_do_cadastro(u.raw_user_meta_data),
+           nullif(regexp_replace(coalesce(u.raw_user_meta_data ->> 'celular', ''), '\D', '', 'g'), '')
+    from auth.users u where u.id = auth.uid()
     returning * into a;
   end if;
   return json_build_object(
-    'email', a.email, 'nome', a.nome, 'criado_em', a.criado_em,
+    'email', a.email, 'nome', a.nome, 'celular', a.celular, 'criado_em', a.criado_em,
     'teste_ate', a.teste_ate, 'liberado_ate', a.liberado_ate, 'bloqueado', a.bloqueado, 'agora', now(),
     'ativo', (not a.bloqueado) and (now() < a.teste_ate or (a.liberado_ate is not null and now() < a.liberado_ate)),
     'acesso_ate', greatest(a.teste_ate, coalesce(a.liberado_ate, a.teste_ate)),
@@ -75,12 +88,28 @@ begin
   );
 end $$;
 
+-- 5b) Completa o cadastro: celular obrigatório (e o nome, se ainda não tiver).
+--     Usado por quem entrou pelo Google e por contas antigas, criadas antes do celular.
+create or replace function public.completar_cadastro(p_celular text, p_nome text default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare cel text := regexp_replace(coalesce(p_celular, ''), '\D', '', 'g');
+begin
+  if auth.uid() is null then raise exception 'sem sessão'; end if;
+  if length(cel) < 10 or length(cel) > 13 then raise exception 'celular inválido'; end if;
+  update public.acessos
+     set celular = cel,
+         nome = coalesce(nullif(trim(p_nome), ''), nome),
+         atualizado_em = now()
+   where user_id = auth.uid();
+end $$;
+
 -- 6) Funções do painel de administração (só funcionam para e-mails da tabela admins)
+drop function if exists public.admin_lista();  -- a lista ganhou a coluna "celular"
 create or replace function public.admin_lista()
-returns table (user_id uuid, email text, nome text, criado_em timestamptz, teste_ate timestamptz,
+returns table (user_id uuid, email text, nome text, celular text, criado_em timestamptz, teste_ate timestamptz,
                liberado_ate timestamptz, bloqueado boolean, observacao text, status text, agora timestamptz)
 language sql stable security definer set search_path = public as $$
-  select a.user_id, a.email, a.nome, a.criado_em, a.teste_ate, a.liberado_ate, a.bloqueado, a.observacao,
+  select a.user_id, a.email, a.nome, a.celular, a.criado_em, a.teste_ate, a.liberado_ate, a.bloqueado, a.observacao,
          case when a.bloqueado then 'bloqueado'
               when a.liberado_ate is not null and now() < a.liberado_ate then 'liberado'
               when now() < a.teste_ate then 'teste'
@@ -134,10 +163,10 @@ begin
 end $$;
 
 -- 7) Quem pode chamar cada função (visitantes sem login não podem nada)
-revoke all on function public.meu_acesso(), public.admin_lista(), public.admin_liberar(uuid, int),
+revoke all on function public.meu_acesso(), public.completar_cadastro(text, text), public.admin_lista(), public.admin_liberar(uuid, int),
   public.admin_definir(uuid, timestamptz), public.admin_bloquear(uuid, boolean), public.admin_observacao(uuid, text),
   public.admin_estender_teste(uuid, int), public.sou_admin() from public, anon;
-grant execute on function public.meu_acesso(), public.admin_lista(), public.admin_liberar(uuid, int),
+grant execute on function public.meu_acesso(), public.completar_cadastro(text, text), public.admin_lista(), public.admin_liberar(uuid, int),
   public.admin_definir(uuid, timestamptz), public.admin_bloquear(uuid, boolean), public.admin_observacao(uuid, text),
   public.admin_estender_teste(uuid, int), public.sou_admin() to authenticated;
 

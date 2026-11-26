@@ -5,6 +5,8 @@ window.SUPER_FAISCA_CONFIG = {
   // Supabase > Project Settings > API (ou Data API): "Project URL" e a chave "anon public"
   supabaseUrl: "https://efisjfchjzofasyajnst.supabase.co",
   supabaseAnonKey: "sb_publishable_4e24GuAgTJKLP01AFyEE0Q_ra37pTk_",
+  // Botão "Entrar com o Google". Só mude para true depois de configurar o Google e o Supabase (guia LOGIN-GOOGLE.md)
+  loginGoogle: false,
 
   // Texto da tela que aparece quando o teste grátis acaba (pode mudar à vontade)
   preco: "R$ 29,90 por ano",

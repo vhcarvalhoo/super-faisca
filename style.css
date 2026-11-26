@@ -393,6 +393,9 @@ input[type=range] { padding: 0; }
 .btn-largo { width: 100%; margin-top: 6px; }
 .login-msg { font-weight: 700; color: var(--vermelho); min-height: 1.2em; }
 .login-msg.ok { color: var(--verde-esc); }
+.btn-google { background: #fff; color: #1f2937; border: 2px solid #d1d5db; --sombra: #d1d5db; font-size: 1rem; padding: 12px 14px; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0 0; }
+.login-ou { display: flex; align-items: center; gap: 10px; color: var(--suave); font-weight: 700; font-size: .9rem; margin: 14px 0 8px; }
+.login-ou::before, .login-ou::after { content: ""; flex: 1; height: 2px; background: #e5e7eb; }
 .login-links { display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .link { background: none; border: 0; color: var(--azul); font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; padding: 4px; }
 .pagamento { margin: 12px 0; display: flex; flex-direction: column; gap: 8px; align-items: center; }
