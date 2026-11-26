@@ -115,7 +115,27 @@ def sintetizar(texto, lento, chave, regiao):
         return r.read()
 
 
+def manter_acordado(ligar):
+    """No Windows, pede para o computador não dormir enquanto grava (a tela pode apagar)."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
+        ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | (ES_SYSTEM_REQUIRED if ligar else 0))
+    except Exception:
+        pass
+
+
 def gravar(falas, so_teste):
+    manter_acordado(True)
+    try:
+        return _gravar(falas, so_teste)
+    finally:
+        manter_acordado(False)
+
+
+def _gravar(falas, so_teste):
     chave, regiao = ler_config()
     GRAVACOES.mkdir(parents=True, exist_ok=True)
     uso = ler_uso()
